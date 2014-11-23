@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="d26a2b5a-5896-44b8-aba7-66198ff036b5" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../SuperimposeJME/app/app.iml" afterPath="$PROJECT_DIR$/../SuperimposeJME/app/app.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../SensorFusionJME/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../SensorFusionJME/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../SuperimposeJME/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../SuperimposeJME/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-    </list>
+    <list default="true" id="d26a2b5a-5896-44b8-aba7-66198ff036b5" name="Default" comment="" />
     <ignored path="VuforiaJME.iws" />
     <ignored path=".idea/workspace.xml" />
     <option name="TRACKING_ENABLED" value="true" />
