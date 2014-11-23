@@ -1,0 +1,2 @@
+include ':libraries:tess-two'
+include ':oCRTest'
