@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="jME3-core">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/app/libs/jME3-core.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://$USER_HOME$/Software/jmonkeyplatform/jmonkeyplatform/libs/jMonkeyEngine3-sources" />
+    </SOURCES>
+  </library>
+</component>

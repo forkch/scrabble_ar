@@ -1,0 +1,27 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 10
+    buildToolsVersion "21.1.0"
+
+    defaultConfig {
+        applicationId "com.ar4android.sensorFusionJME"
+        minSdkVersion 9
+        targetSdkVersion 17
+    }
+
+    buildTypes {
+        release {
+            runProguard false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+}
+
+dependencies {
+    compile files('libs/jME3-android.jar')
+    compile files('libs/jME3-blender.jar')
+    compile files('libs/jME3-core.jar')
+    compile files('libs/jME3-jogg.jar')
+    compile files('libs/jME3-plugins.jar')
+}
