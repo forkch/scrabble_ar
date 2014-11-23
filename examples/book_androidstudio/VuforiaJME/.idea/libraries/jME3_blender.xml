@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="jME3-blender">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/app/libs/jME3-blender.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

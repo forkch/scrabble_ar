@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="jME3-jogg">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/app/libs/jME3-jogg.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
