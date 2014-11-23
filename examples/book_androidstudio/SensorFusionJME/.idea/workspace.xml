@@ -12,16 +12,7 @@
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="app: com.ar4android.sensorFusionJME" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e5897395-5b6d-4516-b5a7-67ba59155d9b" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../SuperimposeJME/app/app.iml" afterPath="$PROJECT_DIR$/../SuperimposeJME/app/app.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../VuforiaJME/app/app.iml" afterPath="$PROJECT_DIR$/../VuforiaJME/app/app.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../SuperimposeJME/.idea/libraries/jME3_android.xml" afterPath="$PROJECT_DIR$/../SuperimposeJME/.idea/libraries/jME3_android.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../SuperimposeJME/.idea/libraries/jME3_core.xml" afterPath="$PROJECT_DIR$/../SuperimposeJME/.idea/libraries/jME3_core.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../SuperimposeJME/.idea/vcs.xml" afterPath="$PROJECT_DIR$/../SuperimposeJME/.idea/vcs.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../SuperimposeJME/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../SuperimposeJME/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../VuforiaJME/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../VuforiaJME/.idea/workspace.xml" />
-    </list>
+    <list default="true" id="e5897395-5b6d-4516-b5a7-67ba59155d9b" name="Default" comment="" />
     <ignored path="SensorFusionJME.iws" />
     <ignored path=".idea/workspace.xml" />
     <option name="TRACKING_ENABLED" value="true" />
