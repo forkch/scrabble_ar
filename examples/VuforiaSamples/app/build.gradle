@@ -20,4 +20,5 @@ android {
 
 dependencies {
     compile files('libs/Vuforia.jar')
+    compile project(':libraries:opencv')
 }

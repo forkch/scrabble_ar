@@ -17,12 +17,17 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.Log;
 
+import com.qualcomm.vuforia.CameraDevice;
+import com.qualcomm.vuforia.ImageTarget;
 import com.qualcomm.vuforia.Matrix44F;
 import com.qualcomm.vuforia.Renderer;
 import com.qualcomm.vuforia.State;
 import com.qualcomm.vuforia.Tool;
+import com.qualcomm.vuforia.Trackable;
 import com.qualcomm.vuforia.TrackableResult;
 import com.qualcomm.vuforia.VIDEO_BACKGROUND_REFLECTION;
+import com.qualcomm.vuforia.Vec2F;
+import com.qualcomm.vuforia.Vec3F;
 import com.qualcomm.vuforia.Vuforia;
 import com.qualcomm.vuforia.samples.SampleApplication.SampleApplicationSession;
 import com.qualcomm.vuforia.samples.SampleApplication.utils.CubeShaders;
@@ -134,16 +139,51 @@ public class UserDefinedTargetRenderer implements GLSurfaceView.Renderer
             
         // Render the RefFree UI elements depending on the current state
         mActivity.refFreeFrame.render();
-        
+
+
+
         // Did we find any trackables this frame?
         for (int tIdx = 0; tIdx < state.getNumTrackableResults(); tIdx++)
         {
             // Get the trackable:
             TrackableResult trackableResult = state.getTrackableResult(tIdx);
+
+            Trackable trackable = trackableResult.getTrackable();
+
             Matrix44F modelViewMatrix_Vuforia = Tool
                 .convertPose2GLMatrix(trackableResult.getPose());
             float[] modelViewMatrix = modelViewMatrix_Vuforia.getData();
-            
+
+            float targetCenter_X = modelViewMatrix[12];
+            float targetCenter_Y = modelViewMatrix[13];
+            float targetCenter_Z = modelViewMatrix[14];
+
+
+            ImageTarget imageTarget = (ImageTarget) trackable;
+
+            final Vec2F imageTargetSize = imageTarget.getSize();
+            float width = imageTargetSize.getData()[0];
+            float height = imageTargetSize.getData()[1];
+            float halfWidth = width * 0.5f;
+            float halfHeight = height * 0.5f;
+
+            Log.i(LOGTAG, "w=" + width + ", h=" + height);
+
+            Vec3F upperLeft = new Vec3F(targetCenter_X - halfWidth, targetCenter_Y + halfHeight, targetCenter_Z);
+            Vec3F upperRight = new Vec3F(targetCenter_X + halfWidth, targetCenter_Y + halfHeight, targetCenter_Z);
+            Vec3F lowerLeft = new Vec3F(targetCenter_X - halfWidth, targetCenter_Y - halfHeight, targetCenter_Z);
+            Vec3F lowerRight = new Vec3F(targetCenter_X + halfWidth, targetCenter_Y - halfHeight, targetCenter_Z);
+
+            Log.i(LOGTAG, vecToString(upperLeft) + " " + vecToString(upperRight) + " " + vecToString(lowerLeft) + vecToString(lowerRight));
+
+            final Vec2F upperLeftImageSpace = Tool.projectPoint(CameraDevice.getInstance().getCameraCalibration(), trackableResult.getPose(), upperLeft);
+            final Vec2F upperRightImageSpace = Tool.projectPoint(CameraDevice.getInstance().getCameraCalibration(), trackableResult.getPose(), upperRight);
+            final Vec2F lowerLeftImageSpace = Tool.projectPoint(CameraDevice.getInstance().getCameraCalibration(), trackableResult.getPose(), lowerLeft);
+            final Vec2F lowerRightImageSpace = Tool.projectPoint(CameraDevice.getInstance().getCameraCalibration(), trackableResult.getPose(), lowerRight);
+
+           // Log.i(LOGTAG, vecToString(upperLeftImageSpace) + " " + vecToString(upperRightImageSpace) + " " + vecToString(lowerLeftImageSpace) + vecToString(lowerRightImageSpace));
+
+
             float[] modelViewProjection = new float[16];
             Matrix.translateM(modelViewMatrix, 0, 0.0f, 0.0f, kObjectScale);
             Matrix.scaleM(modelViewMatrix, 0, kObjectScale, kObjectScale,
@@ -233,5 +273,14 @@ public class UserDefinedTargetRenderer implements GLSurfaceView.Renderer
         mTextures = textures;
         
     }
-    
+
+
+    private String vecToString(Vec2F vec) {
+        return "[" + vec.getData()[0] + "," + vec.getData()[1]+"]";
+    }
+
+    private String vecToString(Vec3F vec) {
+        return "[" + vec.getData()[0] + "," + vec.getData()[1]+"," + vec.getData()[2] + "]";
+    }
+
 }
