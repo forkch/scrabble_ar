@@ -12,7 +12,6 @@ import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -20,9 +19,7 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
-import android.widget.CheckBox;
 import android.widget.ImageView;
-import android.widget.Switch;
 import android.widget.Toast;
 
 import com.qualcomm.vuforia.CameraCalibration;
@@ -89,17 +86,12 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     private Vector<Texture> mTextures;
 
     private boolean mSwitchDatasetAsap = false;
-    private boolean mFlash = false;
-    private boolean mContAutofocus = false;
     private boolean mExtendedTracking = false;
-
-    private View mFlashOptionView;
 
     //private RelativeLayout mUILayout;
 
     boolean mIsDroidDevice = false;
     private ImageView imageView;
-
 
     // Called when the activity first starts or the user navigates back to an
     // activity.
@@ -126,11 +118,9 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     }
 
     // Process Single Tap event to trigger autofocus
-    private class GestureListener extends
-            GestureDetector.SimpleOnGestureListener {
+    private class GestureListener extends GestureDetector.SimpleOnGestureListener {
         // Used to set autofocus one second after a manual focus is triggered
         private final Handler autofocusHandler = new Handler();
-
 
         @Override
         public boolean onDown(MotionEvent e) {
@@ -155,21 +145,14 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         }
     }
 
-
     // We want to load specific textures from the APK, which we will later use
     // for rendering.
-
     private void loadTextures() {
-        mTextures.add(Texture.loadTextureFromApk("TextureTeapotBrass.png",
-                getAssets()));
-        mTextures.add(Texture.loadTextureFromApk("TextureTeapotBlue.png",
-                getAssets()));
-        mTextures.add(Texture.loadTextureFromApk("TextureTeapotRed.png",
-                getAssets()));
-        mTextures.add(Texture.loadTextureFromApk("ImageTargets/Buildings.jpeg",
-                getAssets()));
+        mTextures.add(Texture.loadTextureFromApk("TextureTeapotBrass.png", getAssets()));
+        mTextures.add(Texture.loadTextureFromApk("TextureTeapotBlue.png", getAssets()));
+        mTextures.add(Texture.loadTextureFromApk("TextureTeapotRed.png", getAssets()));
+        mTextures.add(Texture.loadTextureFromApk("ImageTargets/Buildings.jpeg", getAssets()));
     }
-
 
     // Called when the activity will start interacting with the user.
     @Override
@@ -197,7 +180,6 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         }
     }
 
-
     // Callback for configuration changes the activity handles itself
     @Override
     public void onConfigurationChanged(Configuration config) {
@@ -219,23 +201,12 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             mGlView.onPause();
         }
 
-        // Turn off the flash
-        if (mFlashOptionView != null && mFlash) {
-            // OnCheckedChangeListener is called upon changing the checked state
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                ((Switch) mFlashOptionView).setChecked(false);
-            } else {
-                ((CheckBox) mFlashOptionView).setChecked(false);
-            }
-        }
-
         try {
             vuforiaAppSession.pauseAR();
         } catch (ApplicationException e) {
             Log.e(LOGTAG, e.getString());
         }
     }
-
 
     // The final call you receive before your activity is destroyed.
     @Override
@@ -255,7 +226,6 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
         System.gc();
     }
-
 
     // Initializes AR application components.
     private void initApplicationAR() {
@@ -354,8 +324,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             addContentView(mGlView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
             imageView = new ImageView(this);
 
-            addContentView(imageView, new LayoutParams(LayoutParams.MATCH_PARENT,
-                    LayoutParams.MATCH_PARENT));
+            addContentView(imageView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 
             // Sets the UILayout to be drawn in front of the camera
             //mUILayout.bringToFront();
@@ -369,13 +338,12 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 Log.e(LOGTAG, e.getString());
             }
 
-            boolean result = CameraDevice.getInstance().setFocusMode(
-                    CameraDevice.FOCUS_MODE.FOCUS_MODE_CONTINUOUSAUTO);
+            boolean result = CameraDevice.getInstance().setFocusMode(CameraDevice.FOCUS_MODE.FOCUS_MODE_CONTINUOUSAUTO);
 
-            if (result)
-                mContAutofocus = true;
-            else
-                Log.e(LOGTAG, "Unable to enable continuous autofocus");
+//            if (result)
+//                mContAutofocus = true;
+//            else
+//                Log.e(LOGTAG, "Unable to enable continuous autofocus");
 
 /*            mSampleAppMenu = new SampleAppMenu(this, this, "Image Targets",
                     mGlView, mUILayout, null);
@@ -416,7 +384,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             Log.i("Image", "Image stride: " + stride);
             Log.i("Image", "First pixel byte: " + pixelArray[0]);
 
-// make a mat and draw something
+            // make a mat and draw something
             Mat m = Mat.zeros(100, 400, CvType.CV_8UC3);
             Core.putText(m, "hi there ;)", new Point(30, 80), Core.FONT_HERSHEY_SCRIPT_SIMPLEX, 2.2, new Scalar(200, 200, 0), 2);
 
@@ -425,9 +393,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             Utils.matToBitmap(m, bm);
 
             imageView.setImageBitmap(bm);
-
         }
-
 
         if (mSwitchDatasetAsap) {
             mSwitchDatasetAsap = false;
