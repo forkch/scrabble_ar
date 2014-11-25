@@ -241,11 +241,14 @@ public class ImageTargetRenderer implements GLSurfaceView.Renderer {
                     getInstance().getVideoBackgroundConfig();
             Log.i(LOGTAG, "VBC: " + config.getSize().getData()[0] + "x" + config.getSize().getData()[1]);
             Log.i(LOGTAG, "2D (image): " + vecToString(upperLeft) + " " + vecToString(upperRight) + " " + vecToString(lowerLeft) + " " + vecToString(lowerRight));
-*/
+
             int textureIndex = trackable.getName().equalsIgnoreCase("stones") ? 0
                     : 1;
             textureIndex = trackable.getName().equalsIgnoreCase("tarmac") ? 2
                     : textureIndex;
+             */
+
+            int textureIndex = 0;
 
             // deal with the modelview and projection matrices
             float[] modelViewProjection = new float[16];

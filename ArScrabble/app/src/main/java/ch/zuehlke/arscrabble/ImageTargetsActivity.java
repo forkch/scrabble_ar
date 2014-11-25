@@ -112,7 +112,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
         OpenCVLoader.initDebug();
 
-        mDatasetStrings.add("StonesAndChips.xml");
+        mDatasetStrings.add("board.xml");
 
         vuforiaAppSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
