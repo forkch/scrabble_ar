@@ -13,25 +13,25 @@ import com.qualcomm.vuforia.VideoMode;
  */
 public class VectorUtils {
 
-    public static  String vecToString(Vec2F vec) {
+    public static String vecToString(Vec2F vec) {
         return "[" + vec.getData()[0] + "," + vec.getData()[1] + "]";
     }
 
-    public static  String vecToString(Vec3F vec) {
+    public static String vecToString(Vec3F vec) {
         return "[" + vec.getData()[0] + "," + vec.getData()[1] + "," + vec.getData()[2] + "]";
     }
 
-    public static  String vecToString(Vec4F vec) {
+    public static String vecToString(Vec4F vec) {
         return "[" + vec.getData()[0] + "," + vec.getData()[1] + "," + vec.getData()[2] + "," + vec.getData()[3] + "]";
     }
 
-    public static Vec2F cameraPointToScreenPoint(Vec2F cameraPoint) {
+    public static Vec2F cameraPointToScreenPoint(Vec2F cameraPoint, int screenWidth, int screenHeight) {
 
         VideoMode videoMode = CameraDevice.getInstance().getVideoMode(CameraDevice.MODE.MODE_DEFAULT);
         VideoBackgroundConfig config = Renderer.
                 getInstance().getVideoBackgroundConfig();
-        int xOffset = 0;//((int) screenWidth - config.getSize().getData()[0]) / 2.0f + config.getPosition().getData()[0];
-        int yOffset = 0;//((int) screenHeight - config.getSize().getData()[1]) / 2.0f - config.getPosition().getData()[1];
+        int xOffset = (int) ((screenWidth - config.getSize().getData()[0]) / 2.0f + config.getPosition().getData()[0]);
+        int yOffset = (int) ((screenHeight - config.getSize().getData()[1]) / 2.0f - config.getPosition().getData()[1]);
 
         boolean isActivityInPortraitMode = false;
         if (isActivityInPortraitMode) {

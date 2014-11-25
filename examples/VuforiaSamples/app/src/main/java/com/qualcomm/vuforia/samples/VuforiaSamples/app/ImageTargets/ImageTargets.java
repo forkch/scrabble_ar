@@ -50,6 +50,7 @@ import com.qualcomm.vuforia.TrackerManager;
 import com.qualcomm.vuforia.Vec2F;
 import com.qualcomm.vuforia.Vec3F;
 import com.qualcomm.vuforia.VideoBackgroundConfig;
+import com.qualcomm.vuforia.VideoMode;
 import com.qualcomm.vuforia.Vuforia;
 import com.qualcomm.vuforia.samples.SampleApplication.SampleApplicationControl;
 import com.qualcomm.vuforia.samples.SampleApplication.SampleApplicationException;
@@ -69,6 +70,7 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
+import org.opencv.imgproc.Imgproc;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -116,7 +118,7 @@ public class ImageTargets extends Activity implements SampleApplicationControl,
 
     boolean mIsDroidDevice = false;
     private ImageView imageView;
-
+    private Bitmap bitmapTargetImage;
 
     // Called when the activity first starts or the user navigates back to an
     // activity.
@@ -435,47 +437,71 @@ public class ImageTargets extends Activity implements SampleApplicationControl,
         }
     }
 
-
     @Override
     public void onQCARUpdate(State state) {
-        Image imageRGB565 = null;
 
-        Log.i(LOGTAG, "onQCARUpdate");
+        Image imageFromFrame = null;
+
         Frame frame = state.getFrame();
         for (int tIdx = 0; tIdx < state.getNumTrackableResults(); tIdx++) {
-            getCornerCoordinatesInScreenSpace(state, state.getTrackableResult(tIdx));
-            Image image = frame.getImage(tIdx);
-            if (image.getFormat() == PIXEL_FORMAT.GRAYSCALE) {
-                imageRGB565 = image;
-                break;
+
+
+            final TrackerCorners corners = calcCorners(state, state.getTrackableResult(tIdx));
+            for (int imageIdx = 0; imageIdx < frame.getNumImages(); imageIdx++) {
+                Image image = frame.getImage(imageIdx);
+                if (image.getFormat() == PIXEL_FORMAT.RGB888) {
+                    imageFromFrame = image;
+                    break;
+                }
+            }
+
+
+            if (imageFromFrame != null) {
+                ByteBuffer pixels = imageFromFrame.getPixels();
+                byte[] pixelArray = new byte[pixels.remaining()];
+                pixels.get(pixelArray, 0, pixelArray.length);
+                int imageWidth = imageFromFrame.getWidth();
+                int imageHeight = imageFromFrame.getHeight();
+                int stride = imageFromFrame.getStride();
+
+//            Log.d("Image", "Image Format: " + imageFromFrame.getFormat());
+//            Log.d("Image", "Image width: " + imageWidth);
+//            Log.d("Image", "Image height: " + imageHeight);
+//            Log.d("Image", "Image stride: " + stride);
+//            Log.d("Image", "Num Pixels: " + pixelArray.length);
+//            Log.d("Image", "random pixel byte: " + pixelArray[100]);
+
+
+                Mat imageMat = Mat.zeros(imageHeight, imageWidth, CvType.CV_8UC3);
+                imageMat.put(0, 0, pixelArray);
+
+                final Scalar red = new Scalar(255, 0, 0);
+                final Scalar green = new Scalar(0, 255, 0);
+                final Scalar blue = new Scalar(0, 0, 255);
+                final Scalar yellow = new Scalar(255, 255, 0);
+                final Scalar cyan = new Scalar(0, 255, 255);
+
+                Core.circle(imageMat, vecToPoint(corners.getCenter()), 20, red, 5);
+                Core.circle(imageMat, vecToPoint(corners.getUpperLeft()), 20, green, 5);
+                Core.circle(imageMat, vecToPoint(corners.getUpperRight()), 20, blue, 5);
+                Core.circle(imageMat, vecToPoint(corners.getLowerLeft()), 20, yellow, 5);
+                Core.circle(imageMat, vecToPoint(corners.getLowerRight()), 20, cyan, 5);
+
+
+                Mat toDraw = drawBorder(imageMat);
+                if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                    Core.flip(toDraw.t(), toDraw, 1);
+                }
+
+                // convert to bitmap:
+                if (bitmapTargetImage == null) {
+                    bitmapTargetImage = Bitmap.createBitmap(toDraw.cols(), toDraw.rows(), Bitmap.Config.ARGB_8888);
+                }
+                Utils.matToBitmap(toDraw, bitmapTargetImage);
+                imageView.setImageBitmap(bitmapTargetImage);
+
             }
         }
-
-
-        if (imageRGB565 != null) {
-            ByteBuffer pixels = imageRGB565.getPixels();
-            byte[] pixelArray = new byte[pixels.remaining()];
-            pixels.get(pixelArray, 0, pixelArray.length);
-            int imageWidth = imageRGB565.getWidth();
-            int imageHeight = imageRGB565.getHeight();
-            int stride = imageRGB565.getStride();
-            Log.i("Image", "Image width: " + imageWidth);
-            Log.i("Image", "Image height: " + imageHeight);
-            Log.i("Image", "Image stride: " + stride);
-            Log.i("Image", "First pixel byte: " + pixelArray[0]);
-
-// make a mat and draw something
-            Mat m = Mat.zeros(100, 400, CvType.CV_8UC3);
-            Core.putText(m, "hi there ;)", new Point(30, 80), Core.FONT_HERSHEY_SCRIPT_SIMPLEX, 2.2, new Scalar(200, 200, 0), 2);
-
-            // convert to bitmap:
-            Bitmap bm = Bitmap.createBitmap(m.cols(), m.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(m, bm);
-
-            imageView.setImageBitmap(bm);
-
-        }
-
 
 
         if (mSwitchDatasetAsap) {
@@ -494,26 +520,24 @@ public class ImageTargets extends Activity implements SampleApplicationControl,
         }
     }
 
-    private TrackerCorners getCornerCoordinatesInScreenSpace(State state, TrackableResult result) {
+    private Point vecToPoint(Vec2F vec) {
+        return new Point(vec.getData()[0], vec.getData()[1]);
+    }
+
+    private Mat drawBorder(Mat imageMat) {
+        int border = 10;
+        Mat mBorder = new Mat(imageMat.rows() + border * 2, imageMat.cols() + border * 2, imageMat.depth());
+
+        Imgproc.copyMakeBorder(imageMat, mBorder, border, border, border, border, Imgproc.BORDER_CONSTANT, new Scalar(255, 0, 0));
+        return mBorder;
+    }
+
+    private TrackerCorners calcCorners(State state, TrackableResult result) {
 
         Trackable trackable = result.getTrackable();
 
         final Matrix34F pose = result.getPose();
-        Matrix44F modelViewMatrix_Vuforia = Tool
-                .convertPose2GLMatrix(pose);
-        float[] modelViewMatrix = modelViewMatrix_Vuforia.getData();
-
-        float targetCenter_X = modelViewMatrix[12];
-        float targetCenter_Y = modelViewMatrix[13];
-        float targetCenter_Z = modelViewMatrix[14];
-
         ImageTarget imageTarget = (ImageTarget) trackable;
-
-        final Image image = state.getFrame().getImage(0);
-
-        final int imageWidth = image.getWidth();
-        final int imageHeight = image.getHeight();
-        Log.d(LOGTAG, "Image Size w=" + imageWidth + " h=" + imageHeight);
 
         final Vec2F imageTargetSize = imageTarget.getSize();
         float width = imageTargetSize.getData()[0];
@@ -521,42 +545,52 @@ public class ImageTargets extends Activity implements SampleApplicationControl,
         float halfWidth = width * 0.5f;
         float halfHeight = height * 0.5f;
 
-        Log.d(LOGTAG, "Target Size: w=" + width + ", h=" + height);
+        float viewWidth = imageView.getHeight();
+        float viewHeight = imageView.getWidth();
 
-        final Vec3F targetVec = new Vec3F(targetCenter_X, targetCenter_Y, targetCenter_Z);
-        Log.d(LOGTAG, "Target Center:  " + vecToString(targetVec));
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            viewWidth = imageView.getWidth();
+            viewHeight = imageView.getHeight();
+        }
 
-        Vec3F upperLeft = new Vec3F(targetCenter_X - halfWidth, targetCenter_Y + halfHeight, 0.f);
-        Vec3F upperRight = new Vec3F(targetCenter_X + halfWidth, targetCenter_Y + halfHeight, 0.f);
-        Vec3F lowerLeft = new Vec3F(targetCenter_X - halfWidth, targetCenter_Y - halfHeight, 0.f);
-        Vec3F lowerRight = new Vec3F(targetCenter_X + halfWidth, targetCenter_Y - halfHeight, 0.f);
-
-        Log.d(LOGTAG, "3D:  " + vecToString(upperLeft) + " " + vecToString(upperRight) + " " + vecToString(lowerLeft) + " " + vecToString(lowerRight));
-
-        final CameraCalibration cameraCalibration = CameraDevice.getInstance().getCameraCalibration();
-        Log.d(LOGTAG, "calibration: size=" + vecToString(cameraCalibration.getSize()) + " distortionParams=" + vecToString(cameraCalibration.getDistortionParameters()) + " focalLength=" + vecToString(cameraCalibration.getFocalLength()) + " principalPoint=" + vecToString(cameraCalibration.getPrincipalPoint()));
-        final Vec2F upperLeftScreenSpace = Tool.projectPoint(cameraCalibration, pose, upperLeft);
-        final Vec2F upperRightScreenSpace = Tool.projectPoint(cameraCalibration, pose, upperRight);
-        final Vec2F lowerLeftScreenSpace = Tool.projectPoint(cameraCalibration, pose, lowerLeft);
-        final Vec2F lowerRightScreenSpace = Tool.projectPoint(cameraCalibration, pose, lowerRight);
-
-        Log.d(LOGTAG, "2D: " + vecToString(upperLeftScreenSpace) + " " + vecToString(upperRightScreenSpace) + " " + vecToString(lowerLeftScreenSpace) + " " + vecToString(lowerRightScreenSpace));
-        final Vec2F targetInScreenSpace = Tool.projectPoint(cameraCalibration, pose, targetVec);
-        Log.d(LOGTAG, "Target screen space: " + vecToString(targetInScreenSpace));
-
-        final Vec2F upperLeftImageSpace = cameraPointToScreenPoint(upperLeftScreenSpace);
-        final Vec2F upperRightImageSpace = cameraPointToScreenPoint(upperRightScreenSpace);
-        final Vec2F lowerLeftImageSpace = cameraPointToScreenPoint(lowerLeftScreenSpace);
-        final Vec2F lowerRightImageSpace = cameraPointToScreenPoint(lowerRightScreenSpace);
-
-
+        VideoMode videoMode = CameraDevice.getInstance().getVideoMode(CameraDevice.MODE.MODE_DEFAULT);
         VideoBackgroundConfig config = Renderer.
                 getInstance().getVideoBackgroundConfig();
-        Log.d(LOGTAG, "VBC: " + config.getSize().getData()[0] + "x" + config.getSize().getData()[1]);
-        Log.i(LOGTAG, "2D (image): " + vecToString(upperLeftImageSpace) + " " + vecToString(upperRightImageSpace) + " " + vecToString(lowerLeftImageSpace) + " " + vecToString(lowerRightImageSpace));
-        return new TrackerCorners(upperLeftImageSpace, upperRightImageSpace, lowerLeftImageSpace, lowerRightImageSpace);
+
+        final CameraCalibration cameraCalibration = CameraDevice.getInstance().getCameraCalibration();
+        float scale = viewWidth / videoMode.getWidth();
+        if (videoMode.getHeight() * scale < viewHeight) {
+            scale = viewHeight / videoMode.getHeight();
+        }
+        float scaledWidth = videoMode.getWidth() * scale;
+        float scaledHeight = videoMode.getHeight() * scale;
+        Vec2F margin = new Vec2F((scaledWidth - viewWidth) / 2, (scaledHeight - viewHeight) / 2);
+
+        Vec3F upperLeft = new Vec3F(-halfWidth, halfHeight, 0.f);
+        Vec3F upperRight = new Vec3F(halfWidth, halfHeight, 0.f);
+        Vec3F lowerLeft = new Vec3F(-halfWidth, -halfHeight, 0.f);
+        Vec3F lowerRight = new Vec3F(halfWidth, -halfHeight, 0.f);
+        Vec3F center = new Vec3F(0, 0, 0);
+
+        Vec2F upperLeftImageSpace = project(upperLeft, cameraCalibration, pose, margin, scale);
+        Vec2F upperRightImageSpace = project(upperRight, cameraCalibration, pose, margin, scale);
+        Vec2F lowerLeftImageSpace = project(lowerLeft, cameraCalibration, pose, margin, scale);
+        Vec2F lowerRightImageSpace = project(lowerRight, cameraCalibration, pose, margin, scale);
+        Vec2F centerImageSpace = project(center, cameraCalibration, pose, margin, scale);
+
+
+        return new TrackerCorners(centerImageSpace, upperLeftImageSpace, upperRightImageSpace, lowerLeftImageSpace, lowerRightImageSpace);
     }
 
+    private Vec2F project(Vec3F coord, CameraCalibration cameraCalibration, Matrix34F pose, Vec2F margin, float scale) {
+
+        final Vec2F vec2F = Tool.projectPoint(cameraCalibration, pose, coord);
+
+        final float x = vec2F.getData()[0] * scale - margin.getData()[0];
+        final float y = vec2F.getData()[1] * scale - margin.getData()[1];
+
+        return new Vec2F(x, y);
+    }
 
     @Override
     public boolean doInitTrackers() {
