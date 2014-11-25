@@ -67,6 +67,7 @@ public class ImageTargetRenderer implements GLSurfaceView.Renderer {
     private static final float OBJECT_SCALE_FLOAT = 3.0f;
 
 
+
     public ImageTargetRenderer(ImageTargetsActivity activity,
                                ApplicationSession session) {
         mActivity = activity;

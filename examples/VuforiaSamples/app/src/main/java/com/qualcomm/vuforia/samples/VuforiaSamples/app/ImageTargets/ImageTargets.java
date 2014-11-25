@@ -520,9 +520,6 @@ public class ImageTargets extends Activity implements SampleApplicationControl,
         }
     }
 
-    private Point vecToPoint(Vec2F vec) {
-        return new Point(vec.getData()[0], vec.getData()[1]);
-    }
 
     private Mat drawBorder(Mat imageMat) {
         int border = 10;
