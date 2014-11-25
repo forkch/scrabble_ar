@@ -119,7 +119,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
         mDatasetStrings.add("StonesAndChips.xml");
 
-        vuforiaAppSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        vuforiaAppSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         mGestureDetector = new GestureDetector(this, new GestureListener());
 
@@ -185,7 +185,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         // This is needed for some Droid devices to force portrait
         if (mIsDroidDevice) {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
 
         try {
@@ -408,6 +408,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         for (int tIdx = 0; tIdx < state.getNumTrackableResults(); tIdx++) {
 
             final boolean isLandscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+
             final TrackerCorners corners = calcCorners(state, state.getTrackableResult(tIdx), imageView, isLandscape);
             for (int imageIdx = 0; imageIdx < frame.getNumImages(); imageIdx++) {
                 Image image = frame.getImage(imageIdx);
@@ -416,6 +417,8 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                     break;
                 }
             }
+
+            logElapsedTime("getting image from state: ", tic);
 
 
             if (imageFromFrame != null) {
@@ -426,9 +429,12 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 int imageHeight = imageFromFrame.getHeight();
                 int stride = imageFromFrame.getStride();
 
+                logElapsedTime("getting image from vuforia: ", tic);
+
                 Mat imageMat = Mat.zeros(imageHeight, imageWidth, CvType.CV_8UC3);
                 imageMat.put(0, 0, pixelArray);
 
+                logElapsedTime("creating opencv mat: ", tic);
                 final Scalar red = new Scalar(255, 0, 0);
                 final Scalar green = new Scalar(0, 255, 0);
                 final Scalar blue = new Scalar(0, 0, 255);
@@ -443,13 +449,18 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
                 drawCornerCircles(imageMat, red, green, blue, yellow, cyan, center, upperLeft, upperRight, lowerLeft, lowerRight);
 
+                logElapsedTime("drawing circles: ", tic);
                 final Mat rectified = RectifyAlgorithm.rectify(imageMat, new Point[]{upperLeft, upperRight, lowerLeft, lowerRight});
 
+                logElapsedTime("rectification: ", tic);
+
                 Mat withBorder = drawBorder(rectified);
+                logElapsedTime("border: ", tic);
 
                 if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
                     Core.flip(withBorder.t(), withBorder, 1);
                 }
+
                 Mat toDraw = withBorder;
                 // convert to bitmap:
                 if(bitmapTargetImage != null) {
@@ -457,15 +468,17 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 }
 
                 bitmapTargetImage = Bitmap.createBitmap(toDraw.cols(), toDraw.rows(), Bitmap.Config.ARGB_8888);
+                logElapsedTime("creating bitmap: ", tic);
                 Utils.matToBitmap(toDraw, bitmapTargetImage);
+                logElapsedTime("filling mat into bitmap: ", tic);
                 imageView.setImageBitmap(bitmapTargetImage);
 
+
                 imageMat.release();
-                withBorder.release();
+                rectified.release();
 
-                long toc = System.currentTimeMillis();
 
-                Log.i(LOGTAG, "computation took: " + (toc - tic) + " ms");
+                logElapsedTime("total computation took: ", tic);
 
             }
         }
@@ -487,6 +500,10 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         }
     }
 
+    private void logElapsedTime(String msg, long tic) {
+        Log.d(LOGTAG, msg + " " + (System.currentTimeMillis() - tic) + " ms");
+    }
+
     private void drawCornerCircles(Mat imageMat, Scalar red, Scalar green, Scalar blue, Scalar yellow, Scalar cyan, Point center, Point upperLeft, Point upperRight, Point lowerLeft, Point lowerRight) {
         Core.circle(imageMat, center, 20, red, 5);
         Core.circle(imageMat, upperLeft, 20, green, 5);
@@ -497,11 +514,8 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
 
     private Mat drawBorder(Mat imageMat) {
-        int border = 10;
-        Mat mBorder = new Mat(imageMat.rows() + border * 2, imageMat.cols() + border * 2, imageMat.depth());
-
-        Imgproc.copyMakeBorder(imageMat, mBorder, border, border, border, border, Imgproc.BORDER_CONSTANT, new Scalar(255, 0, 0));
-        return mBorder;
+        Core.rectangle(imageMat, new Point(0, 0), new Point(imageMat.cols(), imageMat.rows()), new Scalar(255, 0, 0), 5);
+        return imageMat;
     }
 
 

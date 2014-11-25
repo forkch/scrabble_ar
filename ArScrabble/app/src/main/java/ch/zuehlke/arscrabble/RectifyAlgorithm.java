@@ -1,11 +1,12 @@
 package ch.zuehlke.arscrabble;
 
+import android.util.Log;
+
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
@@ -13,10 +14,11 @@ import org.opencv.imgproc.Imgproc;
  * Removes the perspective distortion from an input image.
  */
 public class RectifyAlgorithm {
+    private static final String TAG = RectifyAlgorithm.class.getSimpleName();
 
     /**
-     * @param inputMat      The original image
-     * @param corners       The corners that delimit our region of interest
+     * @param inputMat The original image
+     * @param corners  The corners that delimit our region of interest
      * @return
      */
     public static Mat rectify(Mat inputMat, Point[] corners) {
@@ -44,8 +46,11 @@ public class RectifyAlgorithm {
                 new Point(inputMat.cols(), inputMat.rows())); // Bottom right
 
 
+        long tic = System.currentTimeMillis();
         Mat transformMatrix = Imgproc.getPerspectiveTransform(srcPoints, destPoints);
+        Log.d(TAG, "forming matrix: " + (System.currentTimeMillis() - tic) + " ms");
         Imgproc.warpPerspective(inputMat, output, transformMatrix, inputMat.size());
+        Log.d(TAG, "warping: " + (System.currentTimeMillis() - tic) + " ms");
 
         return output;
     }
