@@ -25,29 +25,18 @@ import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.Toast;
 
-import com.qualcomm.vuforia.CameraCalibration;
 import com.qualcomm.vuforia.CameraDevice;
 import com.qualcomm.vuforia.DataSet;
 import com.qualcomm.vuforia.Frame;
 import com.qualcomm.vuforia.Image;
-import com.qualcomm.vuforia.ImageTarget;
 import com.qualcomm.vuforia.ImageTracker;
-import com.qualcomm.vuforia.Matrix34F;
-import com.qualcomm.vuforia.Matrix44F;
 import com.qualcomm.vuforia.PIXEL_FORMAT;
-import com.qualcomm.vuforia.Renderer;
 import com.qualcomm.vuforia.STORAGE_TYPE;
 import com.qualcomm.vuforia.State;
-import com.qualcomm.vuforia.Tool;
 import com.qualcomm.vuforia.Trackable;
-import com.qualcomm.vuforia.TrackableResult;
 import com.qualcomm.vuforia.Tracker;
 import com.qualcomm.vuforia.TrackerManager;
-import com.qualcomm.vuforia.Vec2F;
-import com.qualcomm.vuforia.Vec3F;
-import com.qualcomm.vuforia.VideoBackgroundConfig;
 import com.qualcomm.vuforia.Vuforia;
-import static ch.zuehlke.arscrabble.VectorUtils.*;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -56,7 +45,6 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
-import org.opencv.imgproc.Imgproc;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -64,8 +52,8 @@ import java.util.Vector;
 
 import ch.zuehlke.arscrabble.vuforiautils.Texture;
 
-import static ch.zuehlke.arscrabble.VectorUtils.cameraPointToScreenPoint;
-import static ch.zuehlke.arscrabble.VectorUtils.vecToString;
+import static ch.zuehlke.arscrabble.VectorUtils.calcCorners;
+import static ch.zuehlke.arscrabble.VectorUtils.vecToPoint;
 
 
 public class ImageTargetsActivity extends Activity implements ApplicationControl {
