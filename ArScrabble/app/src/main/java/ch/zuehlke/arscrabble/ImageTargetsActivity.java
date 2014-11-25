@@ -105,7 +105,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
         OpenCVLoader.initDebug();
 
-        mDatasetStrings.add("StonesAndChips.xml");
+        mDatasetStrings.add("board.xml");
 
         vuforiaAppSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
@@ -438,18 +438,18 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 drawCornerCircles(imageMat, red, green, blue, yellow, cyan, center, upperLeft, upperRight, lowerLeft, lowerRight);
 
                 logElapsedTime("drawing circles: ", tic);
-                final Mat rectified = RectifyAlgorithm.rectify(imageMat, new Point[]{upperLeft, upperRight, lowerLeft, lowerRight});
+                final Mat rectified = RectifyAlgorithm.rectifyToInputMat(imageMat, new Point[]{upperLeft, upperRight, lowerLeft, lowerRight});
 
                 logElapsedTime("rectification: ", tic);
 
-                Mat withBorder = drawBorder(rectified);
+                //Mat rectified = drawBorder(rectified);
                 logElapsedTime("border: ", tic);
 
+                Mat toDraw = rectified;
                 if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
-                    Core.flip(withBorder.t(), withBorder, 1);
+                    Core.flip(toDraw.t(), toDraw, 1);
                 }
 
-                Mat toDraw = withBorder;
                 // convert to bitmap:
                 if(bitmapTargetImage != null) {
                     bitmapTargetImage.recycle();
