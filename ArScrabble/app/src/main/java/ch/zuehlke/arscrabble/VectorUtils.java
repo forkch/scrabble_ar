@@ -1,7 +1,5 @@
 package ch.zuehlke.arscrabble;
 
-import android.content.res.Configuration;
-import android.os.Build;
 import android.util.Log;
 import android.view.View;
 
@@ -23,10 +21,7 @@ import com.qualcomm.vuforia.Vec4F;
 import com.qualcomm.vuforia.VideoBackgroundConfig;
 import com.qualcomm.vuforia.VideoMode;
 
-import org.opencv.core.Mat;
 import org.opencv.core.Point;
-import org.opencv.core.Scalar;
-import org.opencv.imgproc.Imgproc;
 
 /**
  * Created with love by fork on 24.11.14.
@@ -52,7 +47,7 @@ public class VectorUtils {
     }
 
 
-    public static TrackerCorners calcCorners(State state, TrackableResult result, View imageView, boolean isLandscape) {
+    public static TrackerCorners calcCorners(State state, TrackableResult result, int w, int h, boolean isLandscape) {
 
         Trackable trackable = result.getTrackable();
 
@@ -65,12 +60,15 @@ public class VectorUtils {
         float halfWidth = width * 0.5f;
         float halfHeight = height * 0.5f;
 
-        float viewWidth = imageView.getHeight();
-        float viewHeight = imageView.getWidth();
+        float viewWidth;
+        float viewHeight;
 
         if (isLandscape) {
-            viewWidth = imageView.getWidth();
-            viewHeight = imageView.getHeight();
+            viewWidth = w;
+            viewHeight = h;
+        } else {
+            viewWidth = h;
+            viewHeight = w;
         }
 
         VideoMode videoMode = CameraDevice.getInstance().getVideoMode(CameraDevice.MODE.MODE_DEFAULT);
@@ -79,7 +77,7 @@ public class VectorUtils {
 
         final CameraCalibration cameraCalibration = CameraDevice.getInstance().getCameraCalibration();
         float scale = viewWidth / videoMode.getWidth();
-        if (videoMode.getHeight() * scale < viewHeight) {
+        if (((float)videoMode.getHeight() * scale) < viewHeight) {
             scale = viewHeight / videoMode.getHeight();
         }
         float scaledWidth = videoMode.getWidth() * scale;

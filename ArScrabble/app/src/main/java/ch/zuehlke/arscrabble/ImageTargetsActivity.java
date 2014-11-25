@@ -9,17 +9,21 @@ package ch.zuehlke.arscrabble;
 
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
+import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.Switch;
@@ -347,8 +351,8 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
            // addContentView(mGlView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
             imageView = new ImageView(this);
 
-            addContentView(imageView, new LayoutParams(LayoutParams.MATCH_PARENT,
-                    LayoutParams.MATCH_PARENT));
+            addContentView(imageView, new LayoutParams(LayoutParams.WRAP_CONTENT,
+                    LayoutParams.WRAP_CONTENT));
 
             // Sets the UILayout to be drawn in front of the camera
             //mUILayout.bringToFront();
@@ -396,8 +400,22 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         for (int tIdx = 0; tIdx < state.getNumTrackableResults(); tIdx++) {
 
             final boolean isLandscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+            android.graphics.Point windowSize = new android.graphics.Point();
+            final View view = findViewById(android.R.id.content);
 
-            final TrackerCorners corners = calcCorners(state, state.getTrackableResult(tIdx), imageView, isLandscape);
+//            getWindow().getWindowManager().getDefaultDisplay().getSize(windowSize);
+//            DisplayMetrics metrics = new DisplayMetrics();
+//            WindowManager WM = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+//            Display display = WM.getDefaultDisplay();
+//            display.getMetrics(metrics);
+//            int height = metrics.heightPixels; // screen height
+//            int width = metrics.widthPixels; // screen width
+
+            int width = imageView.getWidth();
+            int height = imageView.getHeight();
+            windowSize.set(1280,720);
+
+            final TrackerCorners corners = calcCorners(state, state.getTrackableResult(tIdx), windowSize.x, windowSize.y, isLandscape);
             for (int imageIdx = 0; imageIdx < frame.getNumImages(); imageIdx++) {
                 Image image = frame.getImage(imageIdx);
                 if (image.getFormat() == PIXEL_FORMAT.RGB888) {
@@ -408,6 +426,10 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
             logElapsedTime("getting image from state: ", tic);
 
+            boolean drawCircles = true;
+            boolean rectify = true;
+            boolean drawBorder = false;
+            boolean segment = true;
 
             if (imageFromFrame != null) {
                 ByteBuffer pixels = imageFromFrame.getPixels();
@@ -435,17 +457,26 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 final Point lowerLeft = vecToPoint(corners.getLowerLeft());
                 final Point lowerRight = vecToPoint(corners.getLowerRight());
 
-                drawCornerCircles(imageMat, red, green, blue, yellow, cyan, center, upperLeft, upperRight, lowerLeft, lowerRight);
+                if(drawCircles) {
+                    drawCornerCircles(imageMat, red, green, blue, yellow, cyan, center, upperLeft, upperRight, lowerLeft, lowerRight);
+                    logElapsedTime("drawing circles: ", tic);
+                }
+                if(rectify) {
+                    imageMat = RectifyAlgorithm.rectifyToInputMat(imageMat, new Point[]{upperLeft, upperRight, lowerLeft, lowerRight});
 
-                logElapsedTime("drawing circles: ", tic);
-                final Mat rectified = RectifyAlgorithm.rectifyToInputMat(imageMat, new Point[]{upperLeft, upperRight, lowerLeft, lowerRight});
+                    logElapsedTime("rectification: ", tic);
+                }
+                if(drawBorder) {
+                    Mat rectified = drawBorder(imageMat);
+                    logElapsedTime("border: ", tic);
+                }
+                if(segment) {
+                    imageMat = ScrabbleBoardSegmentator.segment(imageMat);
+                }
 
-                logElapsedTime("rectification: ", tic);
 
-                //Mat rectified = drawBorder(rectified);
-                logElapsedTime("border: ", tic);
+                Mat toDraw = imageMat;
 
-                Mat toDraw = rectified;
                 if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
                     Core.flip(toDraw.t(), toDraw, 1);
                 }
@@ -463,7 +494,6 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
 
                 imageMat.release();
-                rectified.release();
 
 
                 logElapsedTime("total computation took: ", tic);
@@ -493,11 +523,11 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     }
 
     private void drawCornerCircles(Mat imageMat, Scalar red, Scalar green, Scalar blue, Scalar yellow, Scalar cyan, Point center, Point upperLeft, Point upperRight, Point lowerLeft, Point lowerRight) {
-        Core.circle(imageMat, center, 20, red, 5);
-        Core.circle(imageMat, upperLeft, 20, green, 5);
-        Core.circle(imageMat, upperRight, 20, blue, 5);
-        Core.circle(imageMat, lowerLeft, 20, yellow, 5);
-        Core.circle(imageMat, lowerRight, 20, cyan, 5);
+        Core.circle(imageMat, center, 10, red, 5);
+        Core.circle(imageMat, upperLeft, 10, green, 5);
+        Core.circle(imageMat, upperRight, 10, blue, 5);
+        Core.circle(imageMat, lowerLeft, 10, yellow, 5);
+        Core.circle(imageMat, lowerRight, 10, cyan, 5);
     }
 
 

@@ -27,6 +27,7 @@
             android:name=".ImageTargetsActivity"
             android:configChanges="orientation|keyboardHidden|screenSize|smallestScreenSize"
             android:launchMode="singleTask"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
             >
         </activity>
 
