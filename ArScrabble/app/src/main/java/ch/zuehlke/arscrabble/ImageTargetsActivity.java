@@ -54,6 +54,7 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
@@ -101,6 +102,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     boolean mIsDroidDevice = false;
 
     private ImageView imageView;
+    private int frameCounter;
     private Bitmap bitmapTargetImage;
 
 
@@ -395,9 +397,15 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     public void onQCARUpdate(State state) {
         Image imageFromFrame = null;
 
+        if(frameCounter < 30) {
+            frameCounter++;
+            return;
+        }
+        frameCounter = 0;
+        Log.i(LOGTAG, "RECALCULATING BOARD");
+        long tic = System.currentTimeMillis();
         Frame frame = state.getFrame();
         for (int tIdx = 0; tIdx < state.getNumTrackableResults(); tIdx++) {
-
 
             final boolean isLandscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
             final TrackerCorners corners = calcCorners(state, state.getTrackableResult(tIdx), imageView, isLandscape);
@@ -418,14 +426,6 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 int imageHeight = imageFromFrame.getHeight();
                 int stride = imageFromFrame.getStride();
 
-//            Log.d("Image", "Image Format: " + imageFromFrame.getFormat());
-//            Log.d("Image", "Image width: " + imageWidth);
-//            Log.d("Image", "Image height: " + imageHeight);
-//            Log.d("Image", "Image stride: " + stride);
-//            Log.d("Image", "Num Pixels: " + pixelArray.length);
-//            Log.d("Image", "random pixel byte: " + pixelArray[100]);
-
-
                 Mat imageMat = Mat.zeros(imageHeight, imageWidth, CvType.CV_8UC3);
                 imageMat.put(0, 0, pixelArray);
 
@@ -435,24 +435,37 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 final Scalar yellow = new Scalar(255, 255, 0);
                 final Scalar cyan = new Scalar(0, 255, 255);
 
-                Core.circle(imageMat, vecToPoint(corners.getCenter()), 20, red, 5);
-                Core.circle(imageMat, vecToPoint(corners.getUpperLeft()), 20, green, 5);
-                Core.circle(imageMat, vecToPoint(corners.getUpperRight()), 20, blue, 5);
-                Core.circle(imageMat, vecToPoint(corners.getLowerLeft()), 20, yellow, 5);
-                Core.circle(imageMat, vecToPoint(corners.getLowerRight()), 20, cyan, 5);
+                final Point center = vecToPoint(corners.getCenter());
+                final Point upperLeft = vecToPoint(corners.getUpperLeft());
+                final Point upperRight = vecToPoint(corners.getUpperRight());
+                final Point lowerLeft = vecToPoint(corners.getLowerLeft());
+                final Point lowerRight = vecToPoint(corners.getLowerRight());
 
+                drawCornerCircles(imageMat, red, green, blue, yellow, cyan, center, upperLeft, upperRight, lowerLeft, lowerRight);
 
-                Mat toDraw = drawBorder(imageMat);
+                final Mat rectified = RectifyAlgorithm.rectify(imageMat, new Point[]{upperLeft, upperRight, lowerLeft, lowerRight});
+
+                Mat withBorder = drawBorder(rectified);
+
                 if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
-                    Core.flip(toDraw.t(), toDraw, 1);
+                    Core.flip(withBorder.t(), withBorder, 1);
+                }
+                Mat toDraw = withBorder;
+                // convert to bitmap:
+                if(bitmapTargetImage != null) {
+                    bitmapTargetImage.recycle();
                 }
 
-                // convert to bitmap:
-                if (bitmapTargetImage == null) {
-                    bitmapTargetImage = Bitmap.createBitmap(toDraw.cols(), toDraw.rows(), Bitmap.Config.ARGB_8888);
-                }
+                bitmapTargetImage = Bitmap.createBitmap(toDraw.cols(), toDraw.rows(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(toDraw, bitmapTargetImage);
                 imageView.setImageBitmap(bitmapTargetImage);
+
+                imageMat.release();
+                withBorder.release();
+
+                long toc = System.currentTimeMillis();
+
+                Log.i(LOGTAG, "computation took: " + (toc - tic) + " ms");
 
             }
         }
@@ -472,6 +485,14 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             doUnloadTrackersData();
             doLoadTrackersData();
         }
+    }
+
+    private void drawCornerCircles(Mat imageMat, Scalar red, Scalar green, Scalar blue, Scalar yellow, Scalar cyan, Point center, Point upperLeft, Point upperRight, Point lowerLeft, Point lowerRight) {
+        Core.circle(imageMat, center, 20, red, 5);
+        Core.circle(imageMat, upperLeft, 20, green, 5);
+        Core.circle(imageMat, upperRight, 20, blue, 5);
+        Core.circle(imageMat, lowerLeft, 20, yellow, 5);
+        Core.circle(imageMat, lowerRight, 20, cyan, 5);
     }
 
 

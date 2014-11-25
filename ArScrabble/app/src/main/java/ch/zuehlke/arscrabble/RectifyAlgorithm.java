@@ -5,23 +5,22 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 /**
  * Removes the perspective distortion from an input image.
- *
  */
 public class RectifyAlgorithm {
 
     /**
-     *
-     * @param inputMat The original image
-     * @param corners The corners that delimit our region of interest
-     * @param rotationAngle rotation angle of the image in degree (0-360)
+     * @param inputMat      The original image
+     * @param corners       The corners that delimit our region of interest
      * @return
      */
-      public Mat rectify(Mat inputMat, Point[] corners, int rotationAngle) {
+    public static Mat rectify(Mat inputMat, Point[] corners) {
+
 
         Mat output = new Mat();
 
@@ -29,41 +28,37 @@ public class RectifyAlgorithm {
             // Error
             return new Mat();
         }
+        for (Point corner : corners) {
+            if (corner.x < 0 || corner.y < 0) {
+                return inputMat;
+            }
+        }
 
         Point[] sortedPoints = sortPoints(corners);
 
-        MatOfPoint2f srcPoints = reconstuctPointInOriginalImage(sortedPoints, inputMat.size(), rotationAngle);
+        MatOfPoint2f srcPoints = new MatOfPoint2f(sortedPoints);
 
-        double widthHeightRatio = reconstructWithHeightRatio(sortedPoints, inputMat.size());
-        MatOfPoint2f destPoints = calculateDestMatrix(new MatOfPoint2f(sortedPoints), widthHeightRatio);
+        MatOfPoint2f destPoints = new MatOfPoint2f(new Point(0, 0), // Top left
+                new Point(inputMat.cols(), 0), // Top right
+                new Point(0, inputMat.rows()), // Bottom left
+                new Point(inputMat.cols(), inputMat.rows())); // Bottom right
+
 
         Mat transformMatrix = Imgproc.getPerspectiveTransform(srcPoints, destPoints);
+        Imgproc.warpPerspective(inputMat, output, transformMatrix, inputMat.size());
 
-        Size outputSizeRotatione = rotationAngle == 0
-                || rotationAngle == 180 || rotationAngle == -180
-                ? inputMat.size() : new Size(inputMat.height(), inputMat.width());
-
-        // Calculate size of output
-        Size outputSize = calculateOutputSize(destPoints, outputSizeRotatione);
-
-        Imgproc.warpPerspective(inputMat, output, transformMatrix, outputSize);
-
-        // Crop region
-        Rect rect = new Rect(destPoints.toArray()[0], destPoints.toArray()[3]);
-
-        output = output.submat(rect);
         return output;
     }
 
     /**
      * Reconstructs the points that may have been rotated to the points in the original image.
-     * 
-     * @param source Points that have been rotated
+     *
+     * @param source   Points that have been rotated
      * @param original Size of input image
-     * @param angle Angle of rotation [degree]
+     * @param angle    Angle of rotation [degree]
      * @return Points in original image (rotated by the inverse angle)
      */
-    private MatOfPoint2f reconstuctPointInOriginalImage(Point[] source, Size original, int angle) {
+    private static MatOfPoint2f reconstuctPointInOriginalImage(Point[] source, Size original, int angle) {
         // Calculate size of rotated image
         Size rotatedImage = original;
         if (angle != 0 && angle != 180 && angle != -180) {
@@ -87,11 +82,11 @@ public class RectifyAlgorithm {
 
     /**
      * Sorts the corners so that 1. top left 2. top right 3. bottom left 4. bottom right.
-     * 
+     *
      * @param corners Corners
      * @return Sorted array of corners
      */
-    private Point[] sortPoints(Point[] corners) {
+    private static Point[] sortPoints(Point[] corners) {
         // Calculate Bounding box. Calculate distance to the corners.
         // Choose point with min dist to corner.
         Rect boundingBox = Imgproc.boundingRect(new MatOfPoint(corners));
@@ -100,7 +95,7 @@ public class RectifyAlgorithm {
         Point bottomLeft = new Point(boundingBox.x, boundingBox.y + boundingBox.height);
         Point bottomRight = new Point(boundingBox.x + boundingBox.width, boundingBox.y + boundingBox.height);
 
-        Point[] bb = { topLeft, topRight, bottomLeft, bottomRight };
+        Point[] bb = {topLeft, topRight, bottomLeft, bottomRight};
         Point[] result = new Point[corners.length];
         for (int i = 0; i < corners.length; i++) {
             Point min = null;
@@ -121,23 +116,23 @@ public class RectifyAlgorithm {
 
     /**
      * Calculates the euclidean distance between two points
-     * 
+     *
      * @param p1 Point 1
      * @param p2 Point 2
      * @return Euclidean distance between the points.
      */
-    private double distanceBetween(Point p1, Point p2) {
+    private static double distanceBetween(Point p1, Point p2) {
         return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
     }
 
     /**
      * Calculates the destination point matrix for a given width height ratio of the original document.
-     * 
-     * @param src The source point matrix.
+     *
+     * @param src              The source point matrix.
      * @param widthHeightRatio The width height ratio of the original image
      * @return The destination point matrix.
      */
-    private MatOfPoint2f calculateDestMatrix(MatOfPoint2f src, double widthHeightRatio) {
+    private static MatOfPoint2f calculateDestMatrix(MatOfPoint2f src, double widthHeightRatio) {
         Point[] points = src.toArray();
 
         Rect boundingBox = Imgproc.boundingRect(new MatOfPoint(points));
@@ -163,12 +158,12 @@ public class RectifyAlgorithm {
 
     /**
      * Calculates the size of the output matrix.
-     * 
-     * @param dest Destination points.
+     *
+     * @param dest  Destination points.
      * @param input Size of the input image.
      * @return Size of the output image.
      */
-    private Size calculateOutputSize(MatOfPoint2f dest, Size input) {
+    private static Size calculateOutputSize(MatOfPoint2f dest, Size input) {
         Size output = input.clone();
 
         Rect boundingBox = Imgproc.boundingRect(new MatOfPoint(dest.toArray()));
@@ -213,7 +208,7 @@ public class RectifyAlgorithm {
      * http://stackoverflow.com/questions/1194352/proportions-of-a-perspective-deformed-rectangle
      *
      * @param corners Corners that may have been adjusted by user
-     * @param input Input size of the image
+     * @param input   Input size of the image
      * @return Width/height ratio of the original image
      */
     private static double reconstructWithHeightRatio(Point[] corners, Size input) {
