@@ -1,7 +1,5 @@
 package ch.zuehlke.arscrabble.jmonkey;
 
-import android.util.Log;
-
 import com.jme3.app.SimpleApplication;
 import com.jme3.material.Material;
 import com.jme3.math.Vector3f;
@@ -42,46 +40,44 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         // We use custom viewports - so the main viewport does not need to contain the rootNode
         viewPort.detachScene(rootNode);
 
-        initializeImageBuffer();
         initBackground();
 
-        CameraDevice cameraDevice = CameraDevice.getInstance();
-        cameraDevice.init(CameraDevice.CAMERA.CAMERA_DEFAULT);
-        CameraDevice.getInstance().start();
+        CameraDevice cameraDevice = initCameraDevice();
+        VideoMode videoMode = cameraDevice.getVideoMode(CameraDevice.MODE.MODE_OPTIMIZE_SPEED);
+        VideoBackgroundConfig config = initVideoBackgroundConfig(videoMode);
+        Renderer.getInstance().setVideoBackgroundConfig(config);
 
-        VideoMode vm = cameraDevice.getVideoMode(CameraDevice.MODE.MODE_OPTIMIZE_SPEED);
+        Vuforia.setFrameFormat(PIXEL_FORMAT.RGB888, true);
+        Vuforia.registerCallback(this);
+    }
 
+    private VideoBackgroundConfig initVideoBackgroundConfig(VideoMode videoMode) {
         VideoBackgroundConfig config = new VideoBackgroundConfig();
         config.setEnabled(true);
         config.setSynchronous(true);
         config.setPosition(new Vec2I(0, 0));
 
         int xSize = 0, ySize = 0;
-        if (false) {
-            xSize = (int) (vm.getHeight() * (settings.getHeight() / (float) vm.getWidth()));
-            ySize = settings.getHeight();
 
-            if (xSize < settings.getWidth()) {
-                xSize = settings.getWidth();
-                ySize = (int) (settings.getWidth() * (vm.getWidth() / (float) vm.getHeight()));
-            }
-        } else {
-            xSize = settings.getWidth();
-            ySize = (int) (vm.getHeight() * (settings.getWidth() / (float) vm.getWidth()));
+        int settingsWidth = settings.getWidth();
+        int settingsHeight = settings.getHeight();
 
-            if (ySize < settings.getHeight()) {
-                xSize = (int) (settings.getHeight() * (vm.getWidth() / (float) vm.getHeight()));
-                ySize = settings.getHeight();
-            }
+        xSize = settingsWidth;
+        ySize = (int) (videoMode.getHeight() * (settingsWidth / (float) videoMode.getWidth()));
+        if (ySize < settingsHeight) {
+            xSize = (int) (settingsHeight * (videoMode.getWidth() / (float) videoMode.getHeight()));
+            ySize = settingsHeight;
         }
 
         config.setSize(new Vec2I(xSize, ySize));
+        return config;
+    }
 
-        Renderer.getInstance().setVideoBackgroundConfig(config);
-
-        Vuforia.setFrameFormat(PIXEL_FORMAT.RGB888, true);
-
-        Vuforia.registerCallback(this);
+    private CameraDevice initCameraDevice() {
+        CameraDevice cameraDevice = CameraDevice.getInstance();
+        cameraDevice.init(CameraDevice.CAMERA.CAMERA_DEFAULT);
+        CameraDevice.getInstance().start();
+        return cameraDevice;
     }
 
     @Override
@@ -138,18 +134,11 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         //videoBGVP.setBackgroundColor(new ColorRGBA(1,0,0,1));
     }
 
-    public void initializeImageBuffer() {
-        int width = settings.getWidth();
-        int height = settings.getHeight();
-
-        int bufferSizeR = 640 * 480 * 24;
-
-        byte[] previewBufferSize = null;
-
-        previewBufferSize = new byte[bufferSizeR];
-
+    public void initializeImageBuffer(int width, int height) {
+        int bufferSizeR = width * height * 24;
+        byte[] previewBufferSize = new byte[bufferSizeR];
         backgroundImageBuffer = ByteBuffer.allocateDirect(previewBufferSize.length);
-        backgroundCameraImage = new Image(Image.Format.RGB8, 640, 480, backgroundImageBuffer);
+        backgroundCameraImage = new Image(Image.Format.RGB8, width, height, backgroundImageBuffer);
         backgroundImageBuffer.clear();
     }
 
@@ -159,6 +148,30 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
 
         Frame frame = state.getFrame();
 
+        image = getRGB888Image(frame);
+
+        if (image != null) {
+            ByteBuffer pixels = image.getPixels();
+            byte[] pixelArray = new byte[pixels.remaining()];
+            pixels.get(pixelArray, 0, pixelArray.length);
+            int imageWidth = image.getWidth();
+            int imageHeight = image.getHeight();
+
+            if(backgroundImageBuffer == null) {
+                initializeImageBuffer(imageWidth, imageHeight);
+            } else {
+                backgroundImageBuffer.clear();
+            }
+
+
+            backgroundImageBuffer.put(pixelArray);
+            backgroundCameraImage.setData(backgroundImageBuffer);
+            hasBackgroundImage = true;
+        }
+    }
+
+    private com.qualcomm.vuforia.Image getRGB888Image(Frame frame) {
+        com.qualcomm.vuforia.Image image = null;
         for (int tIdx = 0; tIdx < frame.getNumImages(); tIdx++) {
             com.qualcomm.vuforia.Image vuforiaImage = frame.getImage(tIdx);
             if (vuforiaImage.getFormat() == PIXEL_FORMAT.RGB888) {
@@ -166,29 +179,6 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
                 break;
             }
         }
-
-        if (image != null && !alreadyDone) {
-            ByteBuffer pixels = image.getPixels();
-            byte[] pixelArray = new byte[pixels.remaining()];
-            pixels.get(pixelArray, 0, pixelArray.length);
-            int imageWidth = image.getWidth();
-            int imageHeight = image.getHeight();
-            int stride = image.getStride();
-            Log.i("Image", "Image width: " + imageWidth);
-            Log.i("Image", "Image height: " + imageHeight);
-            Log.i("Image", "Image height: " + imageHeight);
-            Log.i("Image", "Image stride: " + stride);
-            Log.i("Image", "First pixel byte: " + pixelArray[0]);
-
-
-            backgroundImageBuffer.clear();
-            backgroundImageBuffer.put(pixelArray);
-
-            backgroundCameraImage.setData(backgroundImageBuffer);
-
-            hasBackgroundImage = true;
-        }
+        return image;
     }
-
-    private boolean alreadyDone = false;
 }
