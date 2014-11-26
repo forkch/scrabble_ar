@@ -22,5 +22,6 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':libraries:opencv')
+    compile project(':libraries:tess-two')
     compile files('libs/jME3-android.jar')
 }
