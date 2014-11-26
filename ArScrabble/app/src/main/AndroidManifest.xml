@@ -31,7 +31,7 @@
         </activity>
         <activity
             android:name="ch.zuehlke.arscrabble.jmonkey.JMonkeyActivity"
-            android:label="@string/title_activity_jmonkey" >
+            android:label="@string/title_activity_jmonkey"
             android:launchMode="singleTask"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         </activity>
