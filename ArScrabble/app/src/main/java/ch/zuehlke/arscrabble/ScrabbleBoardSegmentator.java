@@ -51,7 +51,10 @@ public class ScrabbleBoardSegmentator {
 
         int rowStart = (verticalIdx * scrabbleBoardMetrics.getCellHeight()) + scrabbleBoardMetrics.getMarginTop();
         int colStart = (horizontalIdx * scrabbleBoardMetrics.getCellWidth()) + scrabbleBoardMetrics.getMarginLeft();
-        final Mat scrabbleTile = image.submat(rowStart, rowStart + scrabbleBoardMetrics.getCellHeight(), colStart, colStart + scrabbleBoardMetrics.getCellWidth());
+
+        final Mat scrabbleTile = new Mat();
+
+        image.submat(rowStart, rowStart + scrabbleBoardMetrics.getCellHeight(), colStart, colStart + scrabbleBoardMetrics.getCellWidth()).copyTo(scrabbleTile);
 
         Point lowerRight = new Point(scrabbleTile.cols(), scrabbleTile.rows());
         Point upperRight = new Point(lowerRight.x - 11, lowerRight.y - 11);
