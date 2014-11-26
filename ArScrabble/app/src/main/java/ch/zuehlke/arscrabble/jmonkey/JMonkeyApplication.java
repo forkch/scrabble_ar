@@ -12,7 +12,6 @@ import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Quad;
 import com.jme3.texture.Image;
 import com.jme3.texture.Texture2D;
-import com.qualcomm.QCAR.QCAR;
 import com.qualcomm.vuforia.CameraDevice;
 import com.qualcomm.vuforia.Frame;
 import com.qualcomm.vuforia.PIXEL_FORMAT;
@@ -50,7 +49,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         cameraDevice.init(CameraDevice.CAMERA.CAMERA_DEFAULT);
         CameraDevice.getInstance().start();
 
-        VideoMode vm = cameraDevice.getVideoMode(CameraDevice.MODE.MODE_DEFAULT);
+        VideoMode vm = cameraDevice.getVideoMode(CameraDevice.MODE.MODE_OPTIMIZE_SPEED);
 
         VideoBackgroundConfig config = new VideoBackgroundConfig();
         config.setEnabled(true);
@@ -143,39 +142,40 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         int width = settings.getWidth();
         int height = settings.getHeight();
 
-        int bufferSizeRGB565 = width * height * 2 + 4096;
+        int bufferSizeR = 640 * 480 * 24;
 
-        byte[] mPreviewBufferRGB656 = null;
+        byte[] previewBufferSize = null;
 
-        mPreviewBufferRGB656 = new byte[bufferSizeRGB565];
+        previewBufferSize = new byte[bufferSizeR];
 
-        backgroundImageBuffer = ByteBuffer.allocateDirect(mPreviewBufferRGB656.length);
-        backgroundCameraImage = new Image(Image.Format.RGB8, width, height, backgroundImageBuffer);
+        backgroundImageBuffer = ByteBuffer.allocateDirect(previewBufferSize.length);
+        backgroundCameraImage = new Image(Image.Format.RGB8, 640, 480, backgroundImageBuffer);
         backgroundImageBuffer.clear();
     }
 
     @Override
     public void QCAR_onUpdate(State state) {
-        com.qualcomm.vuforia.Image imageRGB565 = null;
+        com.qualcomm.vuforia.Image image = null;
 
         Frame frame = state.getFrame();
 
         for (int tIdx = 0; tIdx < frame.getNumImages(); tIdx++) {
-            com.qualcomm.vuforia.Image image = frame.getImage(tIdx);
-            if (image.getFormat() == PIXEL_FORMAT.RGB888) {
-                imageRGB565 = image;
+            com.qualcomm.vuforia.Image vuforiaImage = frame.getImage(tIdx);
+            if (vuforiaImage.getFormat() == PIXEL_FORMAT.RGB888) {
+                image = vuforiaImage;
                 break;
             }
         }
 
-        if (imageRGB565 != null && !alreadyDone) {
-            ByteBuffer pixels = imageRGB565.getPixels();
+        if (image != null && !alreadyDone) {
+            ByteBuffer pixels = image.getPixels();
             byte[] pixelArray = new byte[pixels.remaining()];
             pixels.get(pixelArray, 0, pixelArray.length);
-            int imageWidth = imageRGB565.getWidth();
-            int imageHeight = imageRGB565.getHeight();
-            int stride = imageRGB565.getStride();
+            int imageWidth = image.getWidth();
+            int imageHeight = image.getHeight();
+            int stride = image.getStride();
             Log.i("Image", "Image width: " + imageWidth);
+            Log.i("Image", "Image height: " + imageHeight);
             Log.i("Image", "Image height: " + imageHeight);
             Log.i("Image", "Image stride: " + stride);
             Log.i("Image", "First pixel byte: " + pixelArray[0]);
