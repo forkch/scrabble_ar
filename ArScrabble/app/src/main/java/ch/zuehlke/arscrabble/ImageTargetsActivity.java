@@ -472,7 +472,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
                     if (segment) {
                         ScrabbleBoardSegmentator.segmentImage(imageMat);
-                        final Mat scrabbleTile = ScrabbleBoardSegmentator.getScrabbleTile(imageMat, 6, 5, ScrabbleBoardMetrics.metricsFromImage(imageMat));
+                        final Mat scrabbleTile = ScrabbleBoardSegmentator.getScrabbleTile(imageMat, 3, 3, ScrabbleBoardMetrics.metricsFromImage(imageMat));
                         putMatOnImageView(scrabbleTile, segmentBitmap, segmentImageView);
                     }
 

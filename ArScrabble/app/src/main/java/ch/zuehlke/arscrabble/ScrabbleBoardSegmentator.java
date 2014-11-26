@@ -1,7 +1,5 @@
 package ch.zuehlke.arscrabble;
 
-import android.util.Log;
-
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -51,9 +49,14 @@ public class ScrabbleBoardSegmentator {
 
     public static Mat getScrabbleTile(Mat image, int horizontalIdx, int verticalIdx, ScrabbleBoardMetrics scrabbleBoardMetrics) {
 
-        int rowStart = (verticalIdx*scrabbleBoardMetrics.getCellHeight())+scrabbleBoardMetrics.getMarginTop();
-        int colStart = (horizontalIdx * scrabbleBoardMetrics.getCellWidth())+scrabbleBoardMetrics.getMarginLeft();
+        int rowStart = (verticalIdx * scrabbleBoardMetrics.getCellHeight()) + scrabbleBoardMetrics.getMarginTop();
+        int colStart = (horizontalIdx * scrabbleBoardMetrics.getCellWidth()) + scrabbleBoardMetrics.getMarginLeft();
         final Mat scrabbleTile = image.submat(rowStart, rowStart + scrabbleBoardMetrics.getCellHeight(), colStart, colStart + scrabbleBoardMetrics.getCellWidth());
+
+        Point lowerRight = new Point(scrabbleTile.cols(), scrabbleTile.rows());
+        Point upperRight = new Point(lowerRight.x - 11, lowerRight.y - 11);
+        Core.rectangle(scrabbleTile, upperRight, lowerRight, new Scalar(255, 255, 255), -1);
+
         return scrabbleTile;
     }
 
