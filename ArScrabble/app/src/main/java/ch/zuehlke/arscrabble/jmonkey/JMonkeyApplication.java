@@ -26,8 +26,6 @@ import java.nio.ByteBuffer;
  * Created by ssh on 25.11.2014.
  */
 public class JMonkeyApplication extends SimpleApplication implements Vuforia.UpdateCallbackInterface {
-
-    private Camera backgroundCamera;
     private Material backgroundCameraMaterial;
     private Texture2D backgroundCameraTexture;
     private Spatial backgroundCameraGeometry;
@@ -57,19 +55,19 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         config.setSynchronous(true);
         config.setPosition(new Vec2I(0, 0));
 
-        int xSize = 0, ySize = 0;
+        int screenWidth = settings.getWidth();
+        int screenHeight = settings.getHeight();
+        float imageWidth = (float) videoMode.getWidth();
+        float imageHeight = (float) videoMode.getHeight();
 
-        int settingsWidth = settings.getWidth();
-        int settingsHeight = settings.getHeight();
-
-        xSize = settingsWidth;
-        ySize = (int) (videoMode.getHeight() * (settingsWidth / (float) videoMode.getWidth()));
-        if (ySize < settingsHeight) {
-            xSize = (int) (settingsHeight * (videoMode.getWidth() / (float) videoMode.getHeight()));
-            ySize = settingsHeight;
+        int width = screenWidth;
+        int height = (int) (videoMode.getHeight() * (screenWidth / imageWidth));
+        if (height < screenHeight) {
+            width = (int) (screenHeight * (imageWidth / imageHeight));
+            height = screenHeight;
         }
+        config.setSize(new Vec2I(width, height));
 
-        config.setSize(new Vec2I(xSize, ySize));
         return config;
     }
 
@@ -96,42 +94,37 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         int width = settings.getWidth();
         int height = settings.getHeight();
 
-        // Create a Quad shape.
         Quad videoBGQuad = new Quad(1, 1, true);
-        // Create a Geometry with the Quad shape
         backgroundCameraGeometry = new Geometry("quad", videoBGQuad);
-        float newWidth = 1.f * width / height;
 
+        float newWidth = 1.f * width / height;
         // Center the Geometry in the middle of the screen.
         backgroundCameraGeometry.setLocalTranslation(-0.5f * newWidth, -0.5f, 0.f);
-
-        // Scale (stretch) the width of the Geometry to cover the whole screen
-        // width.
+        // Scale (stretch) the width of the Geometry to cover the whole screen width.
         backgroundCameraGeometry.setLocalScale(1.f * newWidth, 1.f, 1);
 
         // Apply a unshaded material which we will use for texturing.
         backgroundCameraMaterial = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         backgroundCameraGeometry.setMaterial(backgroundCameraMaterial);
 
-        // Create a new texture which will hold the Android camera preview frame
-        // pixels.
         backgroundCameraTexture = new Texture2D();
+        Camera backgroundCamera = createBackgroundCamera(width, height);
 
-        // Create a custom virtual camera with orthographic projection
-        backgroundCamera = new Camera(width, height);
-        backgroundCamera.setViewPort(0.0f, 1.0f, 0.f, 1.0f);
-        backgroundCamera.setLocation(new Vector3f(0f, 0f, 1.f));
-        backgroundCamera.setAxes(new Vector3f(-1f, 0f, 0f), new Vector3f(0f, 1f, 0f), new Vector3f(0f, 0f, -1f));
-        backgroundCamera.setParallelProjection(true);
-
-        // Also create a custom viewport.
         ViewPort videoBackgroundViewPort = renderManager.createMainView("VideoBGView", backgroundCamera);
-
-        // Attach the geometry representing the video background to the viewport.
         videoBackgroundViewPort.attachScene(backgroundCameraGeometry);
 
         //videoBGVP.setClearFlags(true, false, false);
         //videoBGVP.setBackgroundColor(new ColorRGBA(1,0,0,1));
+    }
+
+    private Camera createBackgroundCamera(int width, int height) {
+        // Create a custom virtual camera with orthographic projection
+        Camera backgroundCamera = new Camera(width, height);
+        backgroundCamera.setViewPort(0.0f, 1.0f, 0.f, 1.0f);
+        backgroundCamera.setLocation(new Vector3f(0f, 0f, 1.f));
+        backgroundCamera.setAxes(new Vector3f(-1f, 0f, 0f), new Vector3f(0f, 1f, 0f), new Vector3f(0f, 0f, -1f));
+        backgroundCamera.setParallelProjection(true);
+        return backgroundCamera;
     }
 
     public void initializeImageBuffer(int width, int height) {
@@ -144,28 +137,21 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
 
     @Override
     public void QCAR_onUpdate(State state) {
-        com.qualcomm.vuforia.Image image = null;
-
-        Frame frame = state.getFrame();
-
-        image = getRGB888Image(frame);
+        com.qualcomm.vuforia.Image image = getRGB888Image(state.getFrame());
 
         if (image != null) {
             ByteBuffer pixels = image.getPixels();
             byte[] pixelArray = new byte[pixels.remaining()];
             pixels.get(pixelArray, 0, pixelArray.length);
-            int imageWidth = image.getWidth();
-            int imageHeight = image.getHeight();
 
             if(backgroundImageBuffer == null) {
-                initializeImageBuffer(imageWidth, imageHeight);
+                initializeImageBuffer(image.getWidth(), image.getHeight());
             } else {
                 backgroundImageBuffer.clear();
             }
-
-
             backgroundImageBuffer.put(pixelArray);
             backgroundCameraImage.setData(backgroundImageBuffer);
+
             hasBackgroundImage = true;
         }
     }
