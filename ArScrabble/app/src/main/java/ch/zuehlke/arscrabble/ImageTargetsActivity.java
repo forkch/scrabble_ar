@@ -45,13 +45,17 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.Vector;
 
 import ch.zuehlke.arscrabble.vuforiautils.Texture;
@@ -433,7 +437,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             boolean drawCircles = true;
             boolean rectify = true;
             boolean drawBorder = false;
-            boolean drawSegmentationLines = rectify && true;
+            boolean drawSegmentationLines = rectify && false;
             boolean segment = rectify && true;
             boolean scanScrabbleBoard = rectify && false;
 
@@ -488,6 +492,22 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                     if (drawBorder) {
                         Mat rectified = drawBorder(imageMat);
                     }
+
+//                    final Mat grayscale = new Mat();
+//                    imageMat = imageMat.submat(5, imageMat.rows()-5, 5, imageMat.cols()-5);
+//                    Imgproc.cvtColor(imageMat, grayscale, Imgproc.COLOR_RGB2GRAY);
+//                    Imgproc.Canny(imageMat, imageMat, 50, 50);
+//
+//
+//                    List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+//                    MatOfPoint hierarchy = new MatOfPoint();
+//                    Imgproc.findContours(grayscale, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE, new Point(5, 5));
+//
+//                    final Random random = new Random();
+//                    for (int i = 0; i < contours.size(); i++) {
+//                        Scalar color = new Scalar(random.nextInt(255), random.nextInt(255), random.nextInt(255));
+//                        Imgproc.drawContours(imageMat, contours, i, color, 2, 8, hierarchy, 0, new Point());
+//                    }
 
                     if (segment) {
                         Mat scrabbleTile = ScrabbleBoardSegmentator.getScrabbleTile(imageMat, singleSegmentX, singleSegmentY, ScrabbleBoardMetrics.metricsFromImage(imageMat));
@@ -547,7 +567,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             for (int verticalIdx = 0; verticalIdx < 8; verticalIdx++) {
                 final Mat scrabbleTile = ScrabbleBoardSegmentator.getScrabbleTile(image, horizontalIdx, verticalIdx, scrabbleBoardMetrics);
                 OCRResult ocrResult = performOCR(scrabbleTile, false);
-                if(ocrResult.getConfidence() > MINIMAL_OCR_CONFIDENCE) {
+                if (ocrResult.getConfidence() > MINIMAL_OCR_CONFIDENCE) {
                     Log.i(LOGTAG, "tile at (" + horizontalIdx + "," + verticalIdx + "): " + ocrResult);
                 }
             }
