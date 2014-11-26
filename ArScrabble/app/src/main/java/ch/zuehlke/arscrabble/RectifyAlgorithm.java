@@ -69,27 +69,14 @@ public class RectifyAlgorithm {
      */
     public static Mat rectifyToInputMat(Mat inputMat, Point[] corners) {
 
-
         Mat output = new Mat();
-
-        if (corners.length != 4) {
-            // Error
-            return new Mat();
-        }
-        for (Point corner : corners) {
-            if (corner.x < 0 || corner.y < 0) {
-                return inputMat;
-            }
+        if (!VectorUtils.allCornersVisible(corners)) {
+            return inputMat;
         }
 
         Point[] sortedPoints = sortPoints(corners);
 
         MatOfPoint2f srcPoints = new MatOfPoint2f(sortedPoints);
-
-//        MatOfPoint2f destPoints = new MatOfPoint2f(new Point(0, 0), // Top left
-//                new Point(inputMat.cols(), 0), // Top right
-//                new Point(0, inputMat.rows()), // Bottom left
-//                new Point(inputMat.cols(), inputMat.rows())); // Bottom right
 
         float size = Math.min(inputMat.cols(), inputMat.rows());
         MatOfPoint2f destPoints = new MatOfPoint2f(new Point(0, 0), // Top left

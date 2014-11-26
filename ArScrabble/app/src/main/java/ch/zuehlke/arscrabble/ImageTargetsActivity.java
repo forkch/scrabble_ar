@@ -403,16 +403,10 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             android.graphics.Point windowSize = new android.graphics.Point();
             final View view = findViewById(android.R.id.content);
 
-//            getWindow().getWindowManager().getDefaultDisplay().getSize(windowSize);
-//            DisplayMetrics metrics = new DisplayMetrics();
-//            WindowManager WM = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
-//            Display display = WM.getDefaultDisplay();
-//            display.getMetrics(metrics);
-//            int height = metrics.heightPixels; // screen height
-//            int width = metrics.widthPixels; // screen width
-
-            int width = imageView.getWidth();
-            int height = imageView.getHeight();
+           DisplayMetrics metrics = new DisplayMetrics();
+            getWindowManager().getDefaultDisplay().getMetrics(metrics);
+            int widthPixels = metrics.widthPixels;
+            int heightPixels = metrics.heightPixels;
             windowSize.set(1280,720);
 
             final TrackerCorners corners = calcCorners(state, state.getTrackableResult(tIdx), windowSize.x, windowSize.y, isLandscape);

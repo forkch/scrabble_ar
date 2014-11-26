@@ -21,6 +21,7 @@ import com.qualcomm.vuforia.Vec4F;
 import com.qualcomm.vuforia.VideoBackgroundConfig;
 import com.qualcomm.vuforia.VideoMode;
 
+import org.opencv.core.Mat;
 import org.opencv.core.Point;
 
 /**
@@ -202,5 +203,19 @@ public class VectorUtils {
         //Log.d(LOGTAG, "VBC: " + config.getSize().getData()[0] + "x" + config.getSize().getData()[1]);
         Log.i(LOGTAG, "2D (image): " + vecToString(upperLeftImageSpace) + " " + vecToString(upperRightImageSpace) + " " + vecToString(lowerLeftImageSpace) + " " + vecToString(lowerRightImageSpace));
         return new TrackerCorners(centerImageSpace, upperLeftImageSpace, upperRightImageSpace, lowerLeftImageSpace, lowerRightImageSpace);
+    }
+
+    public static boolean allCornersVisible(Point[] corners) {
+
+        if (corners.length != 4) {
+            // Error
+            return false;
+        }
+        for (Point corner : corners) {
+            if (corner.x < 0 || corner.y < 0) {
+                return false;
+            }
+        }
+        return true;
     }
 }
