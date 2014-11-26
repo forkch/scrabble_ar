@@ -142,16 +142,16 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     public void initializeImageBuffer() {
         int width = settings.getWidth();
         int height = settings.getHeight();
-//
-//        int bufferSizeRGB565 = width * height * 2 + 4096;
-//
-//        byte[] mPreviewBufferRGB656 = null;
-//
-//        mPreviewBufferRGB656 = new byte[bufferSizeRGB565];
 
-//        backgroundImageBuffer = ByteBuffer.allocateDirect(0);
-        backgroundCameraImage = new Image(Image.Format.RGB565, width, height, ByteBuffer.allocateDirect(0));
-//        backgroundImageBuffer.clear();
+        int bufferSizeRGB565 = width * height * 2 + 4096;
+
+        byte[] mPreviewBufferRGB656 = null;
+
+        mPreviewBufferRGB656 = new byte[bufferSizeRGB565];
+
+        backgroundImageBuffer = ByteBuffer.allocateDirect(mPreviewBufferRGB656.length);
+        backgroundCameraImage = new Image(Image.Format.RGB8, width, height, backgroundImageBuffer);
+        backgroundImageBuffer.clear();
     }
 
     @Override
@@ -159,14 +159,6 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         com.qualcomm.vuforia.Image imageRGB565 = null;
 
         Frame frame = state.getFrame();
-       /*for (int tIdx = 0; tIdx < state.getNumTrackableResults(); tIdx++) {
-            com.qualcomm.vuforia.Image image = frame.getImage(tIdx);
-            if (image.getFormat() == PIXEL_FORMAT.GRAYSCALE) {
-                imageRGB565 = image;
-                break;
-            }
-        }*/
-
 
         for (int tIdx = 0; tIdx < frame.getNumImages(); tIdx++) {
             com.qualcomm.vuforia.Image image = frame.getImage(tIdx);
@@ -189,17 +181,12 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
             Log.i("Image", "First pixel byte: " + pixelArray[0]);
 
 
-//
-//            backgroundImageBuffer.clear();
-//            backgroundImageBuffer.put(pixelArray);
-
-            backgroundImageBuffer = ByteBuffer.allocateDirect(pixelArray.length);
+            backgroundImageBuffer.clear();
             backgroundImageBuffer.put(pixelArray);
 
             backgroundCameraImage.setData(backgroundImageBuffer);
 
             hasBackgroundImage = true;
-
         }
     }
 
