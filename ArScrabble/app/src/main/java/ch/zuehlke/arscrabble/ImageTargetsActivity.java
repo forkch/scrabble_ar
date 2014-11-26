@@ -549,7 +549,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
     public String performOCR(Mat scrabbleTile, boolean putInView) {
 
-        Mat processedTile = scrabbleTile;//enhanceTileImage(scrabbleTile);
+        Mat processedTile = enhanceTileImage(scrabbleTile);
         if (putInView) {
             putMatOnImageView(processedTile, segmentBitmap, segmentImageView);
         }
