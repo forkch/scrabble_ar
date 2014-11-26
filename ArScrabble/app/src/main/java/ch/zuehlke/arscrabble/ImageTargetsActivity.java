@@ -91,8 +91,10 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     private int frameCounter;
     private Bitmap processedBitmap;
     private Bitmap liveBitmap;
+    private Bitmap segmentBitmap;
     private ImageView liveImageView;
     private ImageView processedImageView;
+    private ImageView segmentImageView;
 
 
     // Called when the activity first starts or the user navigates back to an
@@ -104,6 +106,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         setContentView(R.layout.activity_imageproc);
         liveImageView = (ImageView) findViewById(R.id.live);
         processedImageView = (ImageView) findViewById(R.id.processed);
+        segmentImageView = (ImageView) findViewById(R.id.segment);
 
         vuforiaAppSession = new ApplicationSession(this);
 
@@ -413,7 +416,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             boolean rectify = true;
             boolean drawBorder = false;
             boolean drawSegmentationLines = rectify && true;
-            boolean segment = rectify && false;
+            boolean segment = rectify && true;
 
             if (imageFromFrame != null) {
                 ByteBuffer pixels = imageFromFrame.getPixels();
@@ -466,13 +469,17 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                     if (drawBorder) {
                         Mat rectified = drawBorder(imageMat);
                     }
+
+                    if (segment) {
+                        ScrabbleBoardSegmentator.segmentImage(imageMat);
+                        final Mat scrabbleTile = ScrabbleBoardSegmentator.getScrabbleTile(imageMat, 6, 5, ScrabbleBoardMetrics.metricsFromImage(imageMat));
+                        putMatOnImageView(scrabbleTile, segmentBitmap, segmentImageView);
+                    }
+
                     if (drawSegmentationLines) {
                         imageMat = ScrabbleBoardSegmentator.drawSegmentationLines(imageMat);
                     }
 
-                    if (segment) {
-                        ScrabbleBoardSegmentator.segmentImage(imageMat);
-                    }
 
 
                     Mat toDraw = imageMat;
