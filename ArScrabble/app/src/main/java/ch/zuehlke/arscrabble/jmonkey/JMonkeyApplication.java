@@ -3,6 +3,7 @@ package ch.zuehlke.arscrabble.jmonkey;
 import android.util.Log;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
@@ -25,7 +26,6 @@ import com.qualcomm.vuforia.Renderer;
 import com.qualcomm.vuforia.STORAGE_TYPE;
 import com.qualcomm.vuforia.State;
 import com.qualcomm.vuforia.Tool;
-import com.qualcomm.vuforia.Trackable;
 import com.qualcomm.vuforia.TrackableResult;
 import com.qualcomm.vuforia.Tracker;
 import com.qualcomm.vuforia.TrackerManager;
@@ -105,33 +105,45 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         return config;
     }
 
-    private void addModel(){
+    private void addModel() {
         rootNode.attachChild(ninja);
         isModelAdded = true;
     }
 
-    private void removeModel(){
+    private void removeModel() {
         rootNode.detachChild(ninja);
         isModelAdded = false;
     }
 
     private void initForegroundScene() {
+
         // Load a model from test_data (OgreXML + material + texture)
-        ninja = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
-        ninja.scale(0.1f, 0.1f, 0.1f);
+        ninja = assetManager.loadModel("Models/Ninja/stone_u.obj");
+        ninja.rotate((float) (Math.PI / 2),0, (float) Math.PI);
 
         // You must add a light to make the model visible
-        DirectionalLight sun = new DirectionalLight();
-        sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
-        rootNode.addLight(sun);
+        addLight(ColorRGBA.White, -1, 0, 0);
+        addLight(ColorRGBA.White, 0, -1, 0);
+        addLight(ColorRGBA.White, 0, 0, -1);
+        addLight(ColorRGBA.White, 1, 0, 0);
+        addLight(ColorRGBA.White, 0, 1, 0);
+        addLight(ColorRGBA.White, 0, 0, 1);
 
         foregroundCamera = new Camera(settings.getWidth(), settings.getHeight());
 
         int aspect = settings.getWidth() / settings.getHeight();
+        // TODO: Wtf is a frustum?
         foregroundCamera.setFrustumPerspective(50, aspect, 1, 1000);
         ViewPort foregroundViewPort = renderManager.createMainView("ForegroundView", foregroundCamera);
         foregroundViewPort.attachScene(rootNode);
         foregroundViewPort.setClearFlags(false, true, false);
+    }
+
+    private void addLight(ColorRGBA color, int x, int y, int z) {
+        DirectionalLight sun1 = new DirectionalLight();
+        sun1.setColor(color);
+        sun1.setDirection(new Vector3f(x, y, z).normalizeLocal());
+        rootNode.addLight(sun1);
     }
 
     private CameraDevice initCameraDevice() {
@@ -236,9 +248,9 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         State currentState = Renderer.getInstance().begin();
         int numberOfTrackableResults = currentState.getNumTrackableResults();
 
-        if(numberOfTrackableResults == 0 && isModelAdded){
+        if (numberOfTrackableResults == 0 && isModelAdded) {
             removeModel();
-        }else if(numberOfTrackableResults > 0 && !isModelAdded){
+        } else if (numberOfTrackableResults > 0 && !isModelAdded) {
             addModel();
         }
 
