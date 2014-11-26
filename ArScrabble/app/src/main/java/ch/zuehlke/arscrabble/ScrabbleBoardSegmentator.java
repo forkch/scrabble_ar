@@ -58,7 +58,6 @@ public class ScrabbleBoardSegmentator {
         int rowStart = (verticalIdx*cellHeight)+marginTop;
         int colStart = (horizontalIdx * cellWidth)+marginLeft;
         final Mat scrabbleTile = image.submat(rowStart, rowStart + cellHeight, colStart, colStart + cellWidth);
-        Log.i(LOGTAG, "width: " + scrabbleTile.cols() + ", height: " + scrabbleTile.rows());
         return scrabbleTile;
     }
 

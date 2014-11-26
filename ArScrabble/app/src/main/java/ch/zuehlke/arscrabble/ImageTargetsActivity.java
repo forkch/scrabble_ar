@@ -15,12 +15,10 @@ import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup.LayoutParams;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.Switch;
@@ -90,9 +88,11 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
     boolean mIsDroidDevice = false;
 
-    private ImageView imageView;
     private int frameCounter;
-    private Bitmap bitmapTargetImage;
+    private Bitmap processedBitmap;
+    private Bitmap liveBitmap;
+    private ImageView liveImageView;
+    private ImageView processedImageView;
 
 
     // Called when the activity first starts or the user navigates back to an
@@ -101,6 +101,9 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(LOGTAG, "onCreate");
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_imageproc);
+        liveImageView = (ImageView) findViewById(R.id.live);
+        processedImageView = (ImageView) findViewById(R.id.processed);
 
         vuforiaAppSession = new ApplicationSession(this);
 
@@ -345,11 +348,11 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             // that the OpenGL ES surface view gets added
             // BEFORE the camera is started and video
             // background is configured.
-           // addContentView(mGlView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-            imageView = new ImageView(this);
-
-            addContentView(imageView, new LayoutParams(LayoutParams.WRAP_CONTENT,
-                    LayoutParams.WRAP_CONTENT));
+            // addContentView(mGlView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+//            imageView = new ImageView(this);
+//
+//            addContentView(imageView, new LayoutParams(LayoutParams.WRAP_CONTENT,
+//                    LayoutParams.WRAP_CONTENT));
 
             // Sets the UILayout to be drawn in front of the camera
             //mUILayout.bringToFront();
@@ -386,12 +389,6 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     public void onQCARUpdate(State state) {
         Image imageFromFrame = null;
 
-        if(frameCounter < 30) {
-            frameCounter++;
-            return;
-        }
-        frameCounter = 0;
-        Log.i(LOGTAG, "RECALCULATING BOARD");
         long tic = System.currentTimeMillis();
         Frame frame = state.getFrame();
         for (int tIdx = 0; tIdx < state.getNumTrackableResults(); tIdx++) {
@@ -400,11 +397,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             android.graphics.Point windowSize = new android.graphics.Point();
             final View view = findViewById(android.R.id.content);
 
-           DisplayMetrics metrics = new DisplayMetrics();
-            getWindowManager().getDefaultDisplay().getMetrics(metrics);
-            int widthPixels = metrics.widthPixels;
-            int heightPixels = metrics.heightPixels;
-            windowSize.set(1280,720);
+            windowSize.set(1280, 720);
 
             final TrackerCorners corners = calcCorners(state, state.getTrackableResult(tIdx), windowSize.x, windowSize.y, isLandscape);
             for (int imageIdx = 0; imageIdx < frame.getNumImages(); imageIdx++) {
@@ -420,7 +413,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             boolean drawCircles = true;
             boolean rectify = true;
             boolean drawBorder = false;
-            boolean drawSegmentationLines = rectify && true ;
+            boolean drawSegmentationLines = rectify && true;
             boolean segment = rectify && true;
 
             if (imageFromFrame != null) {
@@ -449,50 +442,49 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 final Point lowerLeft = vecToPoint(corners.getLowerLeft());
                 final Point lowerRight = vecToPoint(corners.getLowerRight());
 
-                if(drawCircles) {
+                if (drawCircles) {
                     drawCornerCircles(imageMat, red, green, blue, yellow, cyan, center, upperLeft, upperRight, lowerLeft, lowerRight);
                     logElapsedTime("drawing circles: ", tic);
                 }
-                if(rectify) {
-                    imageMat = RectifyAlgorithm.rectifyToInputMat(imageMat, new Point[]{upperLeft, upperRight, lowerLeft, lowerRight});
 
-                    logElapsedTime("rectification: ", tic);
-                }
-                if(drawBorder) {
-                    Mat rectified = drawBorder(imageMat);
-                    logElapsedTime("border: ", tic);
-                }
-                if(drawSegmentationLines) {
-                    imageMat = ScrabbleBoardSegmentator.drawSegmentationLines(imageMat);
-                }
+                putMatOnImageView(imageMat, liveBitmap, liveImageView);
 
-                if(segment) {
-                    ScrabbleBoardSegmentator.segmentImage(imageMat);
+                boolean computationFrame;
+                if (frameCounter < 30) {
+                    frameCounter++;
+                    computationFrame = false;
+                } else {
+                    frameCounter = 0;
+                    computationFrame = true;
                 }
 
+                if (computationFrame) {
+                    Log.i(LOGTAG, "RECALCULATING BOARD");
 
-                Mat toDraw = imageMat;
 
-                if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
-                    Core.flip(toDraw.t(), toDraw, 1);
+                    if (rectify) {
+                        imageMat = RectifyAlgorithm.rectifyToInputMat(imageMat, new Point[]{upperLeft, upperRight, lowerLeft, lowerRight});
+
+                        logElapsedTime("rectification: ", tic);
+                    }
+                    if (drawBorder) {
+                        Mat rectified = drawBorder(imageMat);
+                        logElapsedTime("border: ", tic);
+                    }
+                    if (drawSegmentationLines) {
+                        imageMat = ScrabbleBoardSegmentator.drawSegmentationLines(imageMat);
+                    }
+
+                    if (segment) {
+                        ScrabbleBoardSegmentator.segmentImage(imageMat);
+                    }
+
+
+                    Mat toDraw = imageMat;
+                    putMatOnImageView(imageMat, processedBitmap, processedImageView);
+                    logElapsedTime("total computation took: ", tic);
                 }
-
-                // convert to bitmap:
-                if(bitmapTargetImage != null) {
-                    bitmapTargetImage.recycle();
-                }
-
-                bitmapTargetImage = Bitmap.createBitmap(toDraw.cols(), toDraw.rows(), Bitmap.Config.ARGB_8888);
-                logElapsedTime("creating bitmap: ", tic);
-                Utils.matToBitmap(toDraw, bitmapTargetImage);
-                logElapsedTime("filling mat into bitmap: ", tic);
-                imageView.setImageBitmap(bitmapTargetImage);
-
-
                 imageMat.release();
-
-
-                logElapsedTime("total computation took: ", tic);
 
             }
         }
@@ -512,6 +504,19 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             doUnloadTrackersData();
             doLoadTrackersData();
         }
+    }
+
+    public void putMatOnImageView(Mat image, Bitmap bitmap, ImageView imageView) {
+        // convert to bitmap:
+        if (bitmap != null) {
+            bitmap.recycle();
+        }
+
+        bitmap = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(image, bitmap);
+        imageView.setImageBitmap(bitmap);
+
+
     }
 
     private void logElapsedTime(String msg, long tic) {
@@ -608,185 +613,6 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     boolean isExtendedTrackingActive() {
         return mExtendedTracking;
     }
-
-    final public static int CMD_BACK = -1;
-    final public static int CMD_EXTENDED_TRACKING = 1;
-    final public static int CMD_AUTOFOCUS = 2;
-    final public static int CMD_FLASH = 3;
-    final public static int CMD_CAMERA_FRONT = 4;
-    final public static int CMD_CAMERA_REAR = 5;
-    final public static int CMD_DATASET_START_INDEX = 6;
-
-
-    // This method sets the menu's settings
-    /*private void setSampleAppMenuSettings() {
-        SampleAppMenuGroup group;
-
-        group = mSampleAppMenu.addGroup("", false);
-        group.addTextItem(getString(R.string.menu_back), -1);
-
-        group = mSampleAppMenu.addGroup("", true);
-        group.addSelectionItem(getString(R.string.menu_extended_tracking),
-                CMD_EXTENDED_TRACKING, false);
-        group.addSelectionItem(getString(R.string.menu_contAutofocus),
-                CMD_AUTOFOCUS, mContAutofocus);
-        mFlashOptionView = group.addSelectionItem(
-                getString(R.string.menu_flash), CMD_FLASH, false);
-
-        CameraInfo ci = new CameraInfo();
-        boolean deviceHasFrontCamera = false;
-        boolean deviceHasBackCamera = false;
-        for (int i = 0; i < Camera.getNumberOfCameras(); i++) {
-            Camera.getCameraInfo(i, ci);
-            if (ci.facing == CameraInfo.CAMERA_FACING_FRONT)
-                deviceHasFrontCamera = true;
-            else if (ci.facing == CameraInfo.CAMERA_FACING_BACK)
-                deviceHasBackCamera = true;
-        }
-
-        if (deviceHasBackCamera && deviceHasFrontCamera) {
-            group = mSampleAppMenu.addGroup(getString(R.string.menu_camera),
-                    true);
-            group.addRadioItem(getString(R.string.menu_camera_front),
-                    CMD_CAMERA_FRONT, false);
-            group.addRadioItem(getString(R.string.menu_camera_back),
-                    CMD_CAMERA_REAR, true);
-        }
-
-        group = mSampleAppMenu
-                .addGroup(getString(R.string.menu_datasets), true);
-        mStartDatasetsIndex = CMD_DATASET_START_INDEX;
-        mDatasetsNumber = mDatasetStrings.size();
-
-        group.addRadioItem("Stones & Chips", mStartDatasetsIndex, true);
-        group.addRadioItem("Tarmac", mStartDatasetsIndex + 1, false);
-
-        mSampleAppMenu.attachMenu();
-    }*/
-
-
-   /*  @Override
-   public boolean menuProcess(int command) {
-
-        boolean result = true;
-
-        switch (command) {
-            case CMD_BACK:
-                finish();
-                break;
-
-            case CMD_FLASH:
-                result = CameraDevice.getInstance().setFlashTorchMode(!mFlash);
-
-                if (result) {
-                    mFlash = !mFlash;
-                } else {
-                    showToast(getString(mFlash ? R.string.menu_flash_error_off
-                            : R.string.menu_flash_error_on));
-                    Log.e(LOGTAG,
-                            getString(mFlash ? R.string.menu_flash_error_off
-                                    : R.string.menu_flash_error_on));
-                }
-                break;
-
-            case CMD_AUTOFOCUS:
-
-                if (mContAutofocus) {
-                    result = CameraDevice.getInstance().setFocusMode(
-                            CameraDevice.FOCUS_MODE.FOCUS_MODE_NORMAL);
-
-                    if (result) {
-                        mContAutofocus = false;
-                    } else {
-                        showToast(getString(R.string.menu_contAutofocus_error_off));
-                        Log.e(LOGTAG,
-                                getString(R.string.menu_contAutofocus_error_off));
-                    }
-                } else {
-                    result = CameraDevice.getInstance().setFocusMode(
-                            CameraDevice.FOCUS_MODE.FOCUS_MODE_CONTINUOUSAUTO);
-
-                    if (result) {
-                        mContAutofocus = true;
-                    } else {
-                        showToast(getString(R.string.menu_contAutofocus_error_on));
-                        Log.e(LOGTAG,
-                                getString(R.string.menu_contAutofocus_error_on));
-                    }
-                }
-
-                break;
-
-            case CMD_CAMERA_FRONT:
-            case CMD_CAMERA_REAR:
-
-                // Turn off the flash
-                if (mFlashOptionView != null && mFlash) {
-                    // OnCheckedChangeListener is called upon changing the checked state
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                        ((Switch) mFlashOptionView).setChecked(false);
-                    } else {
-                        ((CheckBox) mFlashOptionView).setChecked(false);
-                    }
-                }
-
-                vuforiaAppSession.stopCamera();
-
-                try {
-                    vuforiaAppSession
-                            .startAR(command == CMD_CAMERA_FRONT ? CameraDevice.CAMERA.CAMERA_FRONT
-                                    : CameraDevice.CAMERA.CAMERA_BACK);
-                } catch (SampleApplicationException e) {
-                    showToast(e.getString());
-                    Log.e(LOGTAG, e.getString());
-                    result = false;
-                }
-                doStartTrackers();
-                break;
-
-            case CMD_EXTENDED_TRACKING:
-                for (int tIdx = 0; tIdx < mCurrentDataset.getNumTrackables(); tIdx++) {
-                    Trackable trackable = mCurrentDataset.getTrackable(tIdx);
-
-                    if (!mExtendedTracking) {
-                        if (!trackable.startExtendedTracking()) {
-                            Log.e(LOGTAG,
-                                    "Failed to start extended tracking target");
-                            result = false;
-                        } else {
-                            Log.d(LOGTAG,
-                                    "Successfully started extended tracking target");
-                        }
-                    } else {
-                        if (!trackable.stopExtendedTracking()) {
-                            Log.e(LOGTAG,
-                                    "Failed to stop extended tracking target");
-                            result = false;
-                        } else {
-                            Log.d(LOGTAG,
-                                    "Successfully started extended tracking target");
-                        }
-                    }
-                }
-
-                if (result)
-                    mExtendedTracking = !mExtendedTracking;
-
-                break;
-
-            default:
-                if (command >= mStartDatasetsIndex
-                        && command < mStartDatasetsIndex + mDatasetsNumber) {
-                    mSwitchDatasetAsap = true;
-                    mCurrentDatasetSelectionIndex = command
-                            - mStartDatasetsIndex;
-                }
-                break;
-        }
-
-        return result;
-    }*/
-
 
     private void showToast(String text) {
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
