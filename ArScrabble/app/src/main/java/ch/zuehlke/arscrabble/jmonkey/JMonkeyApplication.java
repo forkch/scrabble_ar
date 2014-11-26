@@ -51,6 +51,9 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     private Camera backgroundCamera;
     private Camera foregroundCamera;
     private DataSet mCurrentDataset;
+    private Spatial ninja;
+
+    private boolean isModelAdded = false;
 
     @Override
     public void simpleInitApp() {
@@ -102,11 +105,20 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         return config;
     }
 
+    private void addModel(){
+        rootNode.attachChild(ninja);
+        isModelAdded = true;
+    }
+
+    private void removeModel(){
+        rootNode.detachChild(ninja);
+        isModelAdded = false;
+    }
+
     private void initForegroundScene() {
         // Load a model from test_data (OgreXML + material + texture)
-        Spatial ninja = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
+        ninja = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
         ninja.scale(0.1f, 0.1f, 0.1f);
-        rootNode.attachChild(ninja);
 
         // You must add a light to make the model visible
         DirectionalLight sun = new DirectionalLight();
@@ -222,7 +234,15 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
 
     private void updateTracking() {
         State currentState = Renderer.getInstance().begin();
-        for (int tIdx = 0; tIdx < currentState.getNumTrackableResults(); tIdx++) {
+        int numberOfTrackableResults = currentState.getNumTrackableResults();
+
+        if(numberOfTrackableResults == 0 && isModelAdded){
+            removeModel();
+        }else if(numberOfTrackableResults > 0 && !isModelAdded){
+            addModel();
+        }
+
+        for (int tIdx = 0; tIdx < numberOfTrackableResults; tIdx++) {
             TrackableResult result = currentState.getTrackableResult(tIdx);
 
             final Matrix34F pose = result.getPose();
