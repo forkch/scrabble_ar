@@ -74,7 +74,16 @@ public class RectifyAlgorithm {
             return inputMat;
         }
 
+
         Point[] sortedPoints = sortPoints(corners);
+
+        Rect boundingBox = Imgproc.boundingRect(new MatOfPoint(sortedPoints));
+        inputMat = inputMat.submat(boundingBox);
+
+        for (Point sortedPoint : sortedPoints) {
+            sortedPoint.x = sortedPoint.x - boundingBox.x;
+            sortedPoint.y = sortedPoint.y - boundingBox.y;
+        }
 
         MatOfPoint2f srcPoints = new MatOfPoint2f(sortedPoints);
 

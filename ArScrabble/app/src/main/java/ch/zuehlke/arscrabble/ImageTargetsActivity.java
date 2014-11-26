@@ -408,13 +408,12 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 }
             }
 
-            logElapsedTime("getting image from state: ", tic);
 
             boolean drawCircles = true;
             boolean rectify = true;
             boolean drawBorder = false;
             boolean drawSegmentationLines = rectify && true;
-            boolean segment = rectify && true;
+            boolean segment = rectify && false;
 
             if (imageFromFrame != null) {
                 ByteBuffer pixels = imageFromFrame.getPixels();
@@ -424,12 +423,10 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 int imageHeight = imageFromFrame.getHeight();
                 int stride = imageFromFrame.getStride();
 
-                logElapsedTime("getting image from vuforia: ", tic);
 
                 Mat imageMat = Mat.zeros(imageHeight, imageWidth, CvType.CV_8UC3);
                 imageMat.put(0, 0, pixelArray);
 
-                logElapsedTime("creating opencv mat: ", tic);
                 final Scalar red = new Scalar(255, 0, 0);
                 final Scalar green = new Scalar(0, 255, 0);
                 final Scalar blue = new Scalar(0, 0, 255);
@@ -444,13 +441,12 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
                 if (drawCircles) {
                     drawCornerCircles(imageMat, red, green, blue, yellow, cyan, center, upperLeft, upperRight, lowerLeft, lowerRight);
-                    logElapsedTime("drawing circles: ", tic);
                 }
 
                 putMatOnImageView(imageMat, liveBitmap, liveImageView);
 
                 boolean computationFrame;
-                if (frameCounter < 30) {
+                if (frameCounter < 5) {
                     frameCounter++;
                     computationFrame = false;
                 } else {
@@ -469,7 +465,6 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                     }
                     if (drawBorder) {
                         Mat rectified = drawBorder(imageMat);
-                        logElapsedTime("border: ", tic);
                     }
                     if (drawSegmentationLines) {
                         imageMat = ScrabbleBoardSegmentator.drawSegmentationLines(imageMat);
