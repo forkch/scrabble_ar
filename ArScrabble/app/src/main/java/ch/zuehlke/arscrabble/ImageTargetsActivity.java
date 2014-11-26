@@ -9,7 +9,6 @@ package ch.zuehlke.arscrabble;
 
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -18,12 +17,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
-import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.Switch;
@@ -423,7 +420,8 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             boolean drawCircles = true;
             boolean rectify = true;
             boolean drawBorder = false;
-            boolean segment = true;
+            boolean drawSegmentationLines = rectify && true ;
+            boolean segment = rectify && true;
 
             if (imageFromFrame != null) {
                 ByteBuffer pixels = imageFromFrame.getPixels();
@@ -464,8 +462,12 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                     Mat rectified = drawBorder(imageMat);
                     logElapsedTime("border: ", tic);
                 }
+                if(drawSegmentationLines) {
+                    imageMat = ScrabbleBoardSegmentator.drawSegmentationLines(imageMat);
+                }
+
                 if(segment) {
-                    imageMat = ScrabbleBoardSegmentator.segment(imageMat);
+                    ScrabbleBoardSegmentator.segmentImage(imageMat);
                 }
 
 
