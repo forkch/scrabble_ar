@@ -177,7 +177,7 @@ public class ApplicationSession implements UpdateCallbackInterface
                     ApplicationException.CAMERA_INITIALIZATION_FAILURE, error);
         }
 
-        Vuforia.setFrameFormat(PIXEL_FORMAT.RGB565, true);
+        Vuforia.setFrameFormat(PIXEL_FORMAT.RGB888, true);
 
         setProjectionMatrix();
 

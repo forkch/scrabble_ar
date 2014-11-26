@@ -9,43 +9,37 @@ package ch.zuehlke.arscrabble;
 
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
+import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.Toast;
 
-import com.qualcomm.vuforia.CameraCalibration;
 import com.qualcomm.vuforia.CameraDevice;
 import com.qualcomm.vuforia.DataSet;
 import com.qualcomm.vuforia.Frame;
 import com.qualcomm.vuforia.Image;
-import com.qualcomm.vuforia.ImageTarget;
 import com.qualcomm.vuforia.ImageTracker;
-import com.qualcomm.vuforia.Matrix34F;
-import com.qualcomm.vuforia.Matrix44F;
 import com.qualcomm.vuforia.PIXEL_FORMAT;
-import com.qualcomm.vuforia.Renderer;
 import com.qualcomm.vuforia.STORAGE_TYPE;
 import com.qualcomm.vuforia.State;
-import com.qualcomm.vuforia.Tool;
 import com.qualcomm.vuforia.Trackable;
-import com.qualcomm.vuforia.TrackableResult;
 import com.qualcomm.vuforia.Tracker;
 import com.qualcomm.vuforia.TrackerManager;
-import com.qualcomm.vuforia.Vec2F;
-import com.qualcomm.vuforia.Vec3F;
-import com.qualcomm.vuforia.VideoBackgroundConfig;
 import com.qualcomm.vuforia.Vuforia;
 
 import org.opencv.android.OpenCVLoader;
@@ -62,8 +56,8 @@ import java.util.Vector;
 
 import ch.zuehlke.arscrabble.vuforiautils.Texture;
 
-import static ch.zuehlke.arscrabble.VectorUtils.cameraPointToScreenPoint;
-import static ch.zuehlke.arscrabble.VectorUtils.vecToString;
+import static ch.zuehlke.arscrabble.VectorUtils.calcCorners;
+import static ch.zuehlke.arscrabble.VectorUtils.vecToPoint;
 
 
 public class ImageTargetsActivity extends Activity implements ApplicationControl {
@@ -98,7 +92,10 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     //private RelativeLayout mUILayout;
 
     boolean mIsDroidDevice = false;
+
     private ImageView imageView;
+    private int frameCounter;
+    private Bitmap bitmapTargetImage;
 
 
     // Called when the activity first starts or the user navigates back to an
@@ -114,7 +111,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
         mDatasetStrings.add("board.xml");
 
-        vuforiaAppSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        vuforiaAppSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         mGestureDetector = new GestureDetector(this, new GestureListener());
 
@@ -180,7 +177,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         // This is needed for some Droid devices to force portrait
         if (mIsDroidDevice) {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
 
         try {
@@ -351,11 +348,11 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             // that the OpenGL ES surface view gets added
             // BEFORE the camera is started and video
             // background is configured.
-            addContentView(mGlView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+           // addContentView(mGlView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
             imageView = new ImageView(this);
 
-            addContentView(imageView, new LayoutParams(LayoutParams.MATCH_PARENT,
-                    LayoutParams.MATCH_PARENT));
+            addContentView(imageView, new LayoutParams(LayoutParams.WRAP_CONTENT,
+                    LayoutParams.WRAP_CONTENT));
 
             // Sets the UILayout to be drawn in front of the camera
             //mUILayout.bringToFront();
@@ -390,42 +387,118 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
     @Override
     public void onQCARUpdate(State state) {
-        Image imageRGB565 = null;
+        Image imageFromFrame = null;
 
-        //Log.i(LOGTAG, "onQCARUpdate");
+        if(frameCounter < 30) {
+            frameCounter++;
+            return;
+        }
+        frameCounter = 0;
+        Log.i(LOGTAG, "RECALCULATING BOARD");
+        long tic = System.currentTimeMillis();
         Frame frame = state.getFrame();
         for (int tIdx = 0; tIdx < state.getNumTrackableResults(); tIdx++) {
-            getCornerCoordinatesInScreenSpace(state, state.getTrackableResult(tIdx));
-            Image image = frame.getImage(tIdx);
-            if (image.getFormat() == PIXEL_FORMAT.GRAYSCALE) {
-                imageRGB565 = image;
-                break;
+
+            final boolean isLandscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+            android.graphics.Point windowSize = new android.graphics.Point();
+            final View view = findViewById(android.R.id.content);
+
+//            getWindow().getWindowManager().getDefaultDisplay().getSize(windowSize);
+//            DisplayMetrics metrics = new DisplayMetrics();
+//            WindowManager WM = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+//            Display display = WM.getDefaultDisplay();
+//            display.getMetrics(metrics);
+//            int height = metrics.heightPixels; // screen height
+//            int width = metrics.widthPixels; // screen width
+
+            int width = imageView.getWidth();
+            int height = imageView.getHeight();
+            windowSize.set(1280,720);
+
+            final TrackerCorners corners = calcCorners(state, state.getTrackableResult(tIdx), windowSize.x, windowSize.y, isLandscape);
+            for (int imageIdx = 0; imageIdx < frame.getNumImages(); imageIdx++) {
+                Image image = frame.getImage(imageIdx);
+                if (image.getFormat() == PIXEL_FORMAT.RGB888) {
+                    imageFromFrame = image;
+                    break;
+                }
             }
-        }
+
+            logElapsedTime("getting image from state: ", tic);
+
+            boolean drawCircles = true;
+            boolean rectify = true;
+            boolean drawBorder = false;
+            boolean segment = true;
+
+            if (imageFromFrame != null) {
+                ByteBuffer pixels = imageFromFrame.getPixels();
+                byte[] pixelArray = new byte[pixels.remaining()];
+                pixels.get(pixelArray, 0, pixelArray.length);
+                int imageWidth = imageFromFrame.getWidth();
+                int imageHeight = imageFromFrame.getHeight();
+                int stride = imageFromFrame.getStride();
+
+                logElapsedTime("getting image from vuforia: ", tic);
+
+                Mat imageMat = Mat.zeros(imageHeight, imageWidth, CvType.CV_8UC3);
+                imageMat.put(0, 0, pixelArray);
+
+                logElapsedTime("creating opencv mat: ", tic);
+                final Scalar red = new Scalar(255, 0, 0);
+                final Scalar green = new Scalar(0, 255, 0);
+                final Scalar blue = new Scalar(0, 0, 255);
+                final Scalar yellow = new Scalar(255, 255, 0);
+                final Scalar cyan = new Scalar(0, 255, 255);
+
+                final Point center = vecToPoint(corners.getCenter());
+                final Point upperLeft = vecToPoint(corners.getUpperLeft());
+                final Point upperRight = vecToPoint(corners.getUpperRight());
+                final Point lowerLeft = vecToPoint(corners.getLowerLeft());
+                final Point lowerRight = vecToPoint(corners.getLowerRight());
+
+                if(drawCircles) {
+                    drawCornerCircles(imageMat, red, green, blue, yellow, cyan, center, upperLeft, upperRight, lowerLeft, lowerRight);
+                    logElapsedTime("drawing circles: ", tic);
+                }
+                if(rectify) {
+                    imageMat = RectifyAlgorithm.rectifyToInputMat(imageMat, new Point[]{upperLeft, upperRight, lowerLeft, lowerRight});
+
+                    logElapsedTime("rectification: ", tic);
+                }
+                if(drawBorder) {
+                    Mat rectified = drawBorder(imageMat);
+                    logElapsedTime("border: ", tic);
+                }
+                if(segment) {
+                    imageMat = ScrabbleBoardSegmentator.segment(imageMat);
+                }
 
 
-        if (imageRGB565 != null) {
-            ByteBuffer pixels = imageRGB565.getPixels();
-            byte[] pixelArray = new byte[pixels.remaining()];
-            pixels.get(pixelArray, 0, pixelArray.length);
-            int imageWidth = imageRGB565.getWidth();
-            int imageHeight = imageRGB565.getHeight();
-            int stride = imageRGB565.getStride();
-            Log.i("Image", "Image width: " + imageWidth);
-            Log.i("Image", "Image height: " + imageHeight);
-            Log.i("Image", "Image stride: " + stride);
-            Log.i("Image", "First pixel byte: " + pixelArray[0]);
+                Mat toDraw = imageMat;
 
-// make a mat and draw something
-            Mat m = Mat.zeros(100, 400, CvType.CV_8UC3);
-            Core.putText(m, "hi there ;)", new Point(30, 80), Core.FONT_HERSHEY_SCRIPT_SIMPLEX, 2.2, new Scalar(200, 200, 0), 2);
+                if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                    Core.flip(toDraw.t(), toDraw, 1);
+                }
 
-            // convert to bitmap:
-            Bitmap bm = Bitmap.createBitmap(m.cols(), m.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(m, bm);
+                // convert to bitmap:
+                if(bitmapTargetImage != null) {
+                    bitmapTargetImage.recycle();
+                }
 
-            imageView.setImageBitmap(bm);
+                bitmapTargetImage = Bitmap.createBitmap(toDraw.cols(), toDraw.rows(), Bitmap.Config.ARGB_8888);
+                logElapsedTime("creating bitmap: ", tic);
+                Utils.matToBitmap(toDraw, bitmapTargetImage);
+                logElapsedTime("filling mat into bitmap: ", tic);
+                imageView.setImageBitmap(bitmapTargetImage);
 
+
+                imageMat.release();
+
+
+                logElapsedTime("total computation took: ", tic);
+
+            }
         }
 
 
@@ -445,67 +518,22 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         }
     }
 
-    private TrackerCorners getCornerCoordinatesInScreenSpace(State state, TrackableResult result) {
+    private void logElapsedTime(String msg, long tic) {
+        Log.d(LOGTAG, msg + " " + (System.currentTimeMillis() - tic) + " ms");
+    }
 
-        Trackable trackable = result.getTrackable();
-
-        final Matrix34F pose = result.getPose();
-        Matrix44F modelViewMatrix_Vuforia = Tool
-                .convertPose2GLMatrix(pose);
-        float[] modelViewMatrix = modelViewMatrix_Vuforia.getData();
-
-        float targetCenter_X = modelViewMatrix[12];
-        float targetCenter_Y = modelViewMatrix[13];
-        float targetCenter_Z = modelViewMatrix[14];
-
-        ImageTarget imageTarget = (ImageTarget) trackable;
-
-        final Image image = state.getFrame().getImage(0);
-
-        final int imageWidth = image.getWidth();
-        final int imageHeight = image.getHeight();
-        Log.d(LOGTAG, "Image Size w=" + imageWidth + " h=" + imageHeight);
-
-        final Vec2F imageTargetSize = imageTarget.getSize();
-        float width = imageTargetSize.getData()[0];
-        float height = imageTargetSize.getData()[1];
-        float halfWidth = width * 0.5f;
-        float halfHeight = height * 0.5f;
-
-        Log.d(LOGTAG, "Target Size: w=" + width + ", h=" + height);
-
-        final Vec3F targetVec = new Vec3F(targetCenter_X, targetCenter_Y, targetCenter_Z);
-        Log.d(LOGTAG, "Target Center:  " + vecToString(targetVec));
-
-        Vec3F upperLeft = new Vec3F(targetCenter_X - halfWidth, targetCenter_Y + halfHeight, 0.f);
-        Vec3F upperRight = new Vec3F(targetCenter_X + halfWidth, targetCenter_Y + halfHeight, 0.f);
-        Vec3F lowerLeft = new Vec3F(targetCenter_X - halfWidth, targetCenter_Y - halfHeight, 0.f);
-        Vec3F lowerRight = new Vec3F(targetCenter_X + halfWidth, targetCenter_Y - halfHeight, 0.f);
-
-        Log.d(LOGTAG, "3D:  " + vecToString(upperLeft) + " " + vecToString(upperRight) + " " + vecToString(lowerLeft) + " " + vecToString(lowerRight));
-
-        final CameraCalibration cameraCalibration = CameraDevice.getInstance().getCameraCalibration();
-        Log.d(LOGTAG, "calibration: size=" + vecToString(cameraCalibration.getSize()) + " distortionParams=" + vecToString(cameraCalibration.getDistortionParameters()) + " focalLength=" + vecToString(cameraCalibration.getFocalLength()) + " principalPoint=" + vecToString(cameraCalibration.getPrincipalPoint()));
-        final Vec2F upperLeftScreenSpace = Tool.projectPoint(cameraCalibration, pose, upperLeft);
-        final Vec2F upperRightScreenSpace = Tool.projectPoint(cameraCalibration, pose, upperRight);
-        final Vec2F lowerLeftScreenSpace = Tool.projectPoint(cameraCalibration, pose, lowerLeft);
-        final Vec2F lowerRightScreenSpace = Tool.projectPoint(cameraCalibration, pose, lowerRight);
-
-        Log.d(LOGTAG, "2D: " + vecToString(upperLeftScreenSpace) + " " + vecToString(upperRightScreenSpace) + " " + vecToString(lowerLeftScreenSpace) + " " + vecToString(lowerRightScreenSpace));
-        final Vec2F targetInScreenSpace = Tool.projectPoint(cameraCalibration, pose, targetVec);
-        Log.d(LOGTAG, "Target screen space: " + vecToString(targetInScreenSpace));
-
-        final Vec2F upperLeftImageSpace = cameraPointToScreenPoint(upperLeftScreenSpace);
-        final Vec2F upperRightImageSpace = cameraPointToScreenPoint(upperRightScreenSpace);
-        final Vec2F lowerLeftImageSpace = cameraPointToScreenPoint(lowerLeftScreenSpace);
-        final Vec2F lowerRightImageSpace = cameraPointToScreenPoint(lowerRightScreenSpace);
+    private void drawCornerCircles(Mat imageMat, Scalar red, Scalar green, Scalar blue, Scalar yellow, Scalar cyan, Point center, Point upperLeft, Point upperRight, Point lowerLeft, Point lowerRight) {
+        Core.circle(imageMat, center, 10, red, 5);
+        Core.circle(imageMat, upperLeft, 10, green, 5);
+        Core.circle(imageMat, upperRight, 10, blue, 5);
+        Core.circle(imageMat, lowerLeft, 10, yellow, 5);
+        Core.circle(imageMat, lowerRight, 10, cyan, 5);
+    }
 
 
-        VideoBackgroundConfig config = Renderer.
-                getInstance().getVideoBackgroundConfig();
-        Log.d(LOGTAG, "VBC: " + config.getSize().getData()[0] + "x" + config.getSize().getData()[1]);
-        Log.i(LOGTAG, "2D (image): " + vecToString(upperLeftImageSpace) + " " + vecToString(upperRightImageSpace) + " " + vecToString(lowerLeftImageSpace) + " " + vecToString(lowerRightImageSpace));
-        return new TrackerCorners(upperLeftImageSpace, upperRightImageSpace, lowerLeftImageSpace, lowerRightImageSpace);
+    private Mat drawBorder(Mat imageMat) {
+        Core.rectangle(imageMat, new Point(0, 0), new Point(imageMat.cols(), imageMat.rows()), new Scalar(255, 0, 0), 5);
+        return imageMat;
     }
 
 

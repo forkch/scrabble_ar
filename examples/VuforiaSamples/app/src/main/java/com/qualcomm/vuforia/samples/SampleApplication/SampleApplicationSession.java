@@ -178,7 +178,9 @@ public class SampleApplicationSession implements UpdateCallbackInterface
         }
         
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB565, true);
-        
+        Vuforia.setFrameFormat(PIXEL_FORMAT.RGB888, true);
+        Vuforia.setFrameFormat(PIXEL_FORMAT.GRAYSCALE, false);
+
         setProjectionMatrix();
         
         mSessionControl.doStartTrackers();
