@@ -2,9 +2,6 @@ package ch.zuehlke.arscrabble.jmonkey;
 
 import android.util.Log;
 
-import com.jme3.animation.AnimChannel;
-import com.jme3.animation.AnimControl;
-import com.jme3.animation.AnimEventListener;
 import com.jme3.app.SimpleApplication;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
@@ -17,7 +14,6 @@ import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Quad;
 import com.jme3.texture.Image;
 import com.jme3.texture.Texture2D;
-import com.qualcomm.vuforia.CameraCalibration;
 import com.qualcomm.vuforia.CameraDevice;
 import com.qualcomm.vuforia.DataSet;
 import com.qualcomm.vuforia.Frame;
@@ -33,7 +29,6 @@ import com.qualcomm.vuforia.Trackable;
 import com.qualcomm.vuforia.TrackableResult;
 import com.qualcomm.vuforia.Tracker;
 import com.qualcomm.vuforia.TrackerManager;
-import com.qualcomm.vuforia.Vec2F;
 import com.qualcomm.vuforia.Vec2I;
 import com.qualcomm.vuforia.VideoBackgroundConfig;
 import com.qualcomm.vuforia.VideoMode;
@@ -110,9 +105,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     private void initForegroundScene() {
         // Load a model from test_data (OgreXML + material + texture)
         Spatial ninja = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
-        ninja.scale(0.025f, 0.025f, 0.025f);
-        ninja.rotate(0.0f, -3.0f, 0.0f);
-        ninja.setLocalTranslation(0.0f, -2.5f, 0.0f);
+        ninja.scale(0.1f, 0.1f, 0.1f);
         rootNode.attachChild(ninja);
 
         // You must add a light to make the model visible
@@ -121,15 +114,12 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         rootNode.addLight(sun);
 
         foregroundCamera = new Camera(settings.getWidth(), settings.getHeight());
-        foregroundCamera.setLocation(new Vector3f(0f, 0f, 10f));
-        foregroundCamera.setAxes(new Vector3f(-1f, 0f, 0f), new Vector3f(0f, 1f, 0f), new Vector3f(0f, 0f, -1f));
 
         int aspect = settings.getWidth() / settings.getHeight();
-        foregroundCamera.setFrustumPerspective(36, aspect, 1, 1000);
+        foregroundCamera.setFrustumPerspective(50, aspect, 1, 1000);
         ViewPort foregroundViewPort = renderManager.createMainView("ForegroundView", foregroundCamera);
         foregroundViewPort.attachScene(rootNode);
         foregroundViewPort.setClearFlags(false, true, false);
-        foregroundViewPort.setBackgroundColor(ColorRGBA.Blue);
     }
 
     private CameraDevice initCameraDevice() {
@@ -210,6 +200,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
             } else {
                 backgroundImageBuffer.clear();
             }
+
             backgroundImageBuffer.put(pixelArray);
             backgroundCameraImage.setData(backgroundImageBuffer);
 
@@ -265,6 +256,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         Vector3f left = new Vector3f(-cam_right_x, -cam_right_y, -cam_right_z);
         Vector3f up = new Vector3f(-cam_up_x, -cam_up_y, -cam_up_z);
         Vector3f direction = new Vector3f(cam_dir_x, cam_dir_y, cam_dir_z);
+
         foregroundCamera.setAxes(left, up, direction);
     }
 
@@ -275,59 +267,43 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     public boolean doLoadTrackersData() {
         TrackerManager tManager = TrackerManager.getInstance();
         ImageTracker imageTracker = (ImageTracker) tManager.getTracker(ImageTracker.getClassType());
-        if (imageTracker == null)
+        if (imageTracker == null) {
             return false;
+        }
 
-        if (mCurrentDataset == null)
+        if (mCurrentDataset == null) {
             mCurrentDataset = imageTracker.createDataSet();
+        }
 
-        if (mCurrentDataset == null)
+        if (mCurrentDataset == null) {
             return false;
+        }
 
-        if (!mCurrentDataset.load("board.xml", STORAGE_TYPE.STORAGE_APPRESOURCE))
+        if (!mCurrentDataset.load("board.xml", STORAGE_TYPE.STORAGE_APPRESOURCE)) {
             return false;
+        }
 
-        if (!imageTracker.activateDataSet(mCurrentDataset))
+        if (!imageTracker.activateDataSet(mCurrentDataset)) {
             return false;
-
-        int numTrackables = mCurrentDataset.getNumTrackables();
-        for (int count = 0; count < numTrackables; count++) {
-            Trackable trackable = mCurrentDataset.getTrackable(count);
-
-            String name = "Current Dataset : " + trackable.getName();
-            trackable.setUserData(name);
         }
 
         return true;
     }
 
-    public boolean doInitTrackers() {
-        // Indicate if the trackers were initialized correctly
-        boolean result = true;
-
+    public void doInitTrackers() {
         TrackerManager tManager = TrackerManager.getInstance();
-        Tracker tracker;
-
-        // Trying to initialize the image tracker
-        tracker = tManager.initTracker(ImageTracker.getClassType());
+        Tracker tracker = tManager.initTracker(ImageTracker.getClassType());
         if (tracker == null) {
             Log.e("JMonkeyApplication", "Tracker not initialized. Tracker already initialized or the camera is already started");
-            result = false;
         } else {
             Log.i("JMonkeyApplication", "Tracker successfully initialized");
         }
-        return result;
     }
 
-    public boolean doStartTrackers() {
-        // Indicate if the trackers were started correctly
-        boolean result = true;
-
-        Tracker imageTracker = TrackerManager.getInstance().getTracker(
-                ImageTracker.getClassType());
-        if (imageTracker != null)
+    public void doStartTrackers() {
+        Tracker imageTracker = TrackerManager.getInstance().getTracker(ImageTracker.getClassType());
+        if (imageTracker != null) {
             imageTracker.start();
-
-        return result;
+        }
     }
 }
