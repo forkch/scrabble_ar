@@ -42,22 +42,21 @@ public class VectorUtils {
         return "[" + vec.getData()[0] + "," + vec.getData()[1] + "," + vec.getData()[2] + "," + vec.getData()[3] + "]";
     }
 
-
     public static Point vecToPoint(Vec2F vec) {
         return new Point(vec.getData()[0], vec.getData()[1]);
     }
 
-
     public static TrackerCorners calcCorners(State state, TrackableResult result, int w, int h, boolean isLandscape) {
 
         Trackable trackable = result.getTrackable();
+        ImageTarget imageTarget = (ImageTarget) trackable;
 
         final Matrix34F pose = result.getPose();
-        ImageTarget imageTarget = (ImageTarget) trackable;
 
         final Vec2F imageTargetSize = imageTarget.getSize();
         float width = imageTargetSize.getData()[0];
         float height = imageTargetSize.getData()[1];
+
         float halfWidth = width * 0.5f;
         float halfHeight = height * 0.5f;
 

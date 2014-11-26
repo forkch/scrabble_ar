@@ -37,15 +37,6 @@ public class ScrabbleBoardSegmentator {
 
     }
 
-    public static void segmentImage(Mat image) {
-
-        final ScrabbleBoardMetrics scrabbleBoardMetrics = ScrabbleBoardMetrics.metricsFromImage(image);
-        for (int horizontalIdx = 0; horizontalIdx < 16; horizontalIdx++) {
-            for (int verticalIdx = 0; verticalIdx < 16; verticalIdx++) {
-                getScrabbleTile(image, horizontalIdx, verticalIdx, scrabbleBoardMetrics);
-            }
-        }
-    }
 
     public static Mat getScrabbleTile(Mat image, int horizontalIdx, int verticalIdx, ScrabbleBoardMetrics scrabbleBoardMetrics) {
 
