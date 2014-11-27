@@ -24,7 +24,7 @@ public class SimpleField {
     }
 
     public Letter getLetter() {
-        return stone.getLetter();
+        return (stone == null) ? null : stone.getLetter();
     }
 
     public void setStone(Stone stone) {
