@@ -8,4 +8,4 @@ map_Kd back.jpg
 
 newmtl MaterialFront
 Kd 1.00 1.00 1.00
-map_Kd front_n.jpg
+map_Kd front_d.jpg

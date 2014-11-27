@@ -1,32 +1,11 @@
-# Blender MTL File: 'stone.blend'
-# Material Count: 3
+newmtl MaterialSide
+Kd 1.00 1.00 1.00
+map_Kd side.jpg
 
-newmtl Material
-Ns 96.078431
-Ka 0.000000 0.000000 0.000000
-Kd 0.640000 0.640000 0.640000
-Ks 0.500000 0.500000 0.500000
-Ni 1.000000
-d 1.000000
-illum 2
+newmtl MaterialBack
+Kd 1.00 1.00 1.00
 map_Kd back.jpg
 
-newmtl Material_front_h.psd
-Ns 96.078431
-Ka 0.000000 0.000000 0.000000
-Kd 0.640000 0.640000 0.640000
-Ks 0.500000 0.500000 0.500000
-Ni 1.000000
-d 1.000000
-illum 2
-map_Kd front_h.psd
-
-newmtl Material_side.jpg
-Ns 96.078431
-Ka 0.000000 0.000000 0.000000
-Kd 0.640000 0.640000 0.640000
-Ks 0.500000 0.500000 0.500000
-Ni 1.000000
-d 1.000000
-illum 2
-map_Kd side.jpg
+newmtl MaterialFront
+Kd 1.00 1.00 1.00
+map_Kd front_h.jpg
