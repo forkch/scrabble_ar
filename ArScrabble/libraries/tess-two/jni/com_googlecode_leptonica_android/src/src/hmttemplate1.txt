@@ -144,14 +144,14 @@ PIX       *pixt;
 
         /*  The images must be surrounded with 32 additional border
          *  pixels, that we'll read from.  We fabricate a "proper"
-         *  image as the subimage within the border, having the
+         *  tileImage as the subimage within the border, having the
          *  following parameters:  */
     w = pixGetWidth(pixs) - 64;
     h = pixGetHeight(pixs) - 64;
     datas = pixGetData(pixs) + 32 * wpls + 1;
     datad = pixGetData(pixd) + 32 * wpld + 1;
 
-    if (pixd == pixs) {  /* need temp image if in-place */
+    if (pixd == pixs) {  /* need temp tileImage if in-place */
         if ((pixt = pixCopy(NULL, pixs)) == NULL)
             return (PIX *)ERROR_PTR("pixt not made", procName, pixd);
         datat = pixGetData(pixt) + 32 * wpls + 1;

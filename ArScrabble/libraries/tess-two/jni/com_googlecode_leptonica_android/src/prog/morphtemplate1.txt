@@ -170,7 +170,7 @@ PIX       *pixt;
 
         /* The images must be surrounded, in advance, with a border of
          * size 32 pixels (or 64, for closing), that we'll read from.
-         * Fabricate a "proper" image as the subimage within the 32
+         * Fabricate a "proper" tileImage as the subimage within the 32
          * pixel border, having the following parameters:  */
     w = pixGetWidth(pixs) - 64;
     h = pixGetHeight(pixs) - 64;
@@ -183,7 +183,7 @@ PIX       *pixt;
             borderop = erodeop;
             index++;
         }
-        if (pixd == pixs) {  /* in-place; generate a temp image */
+        if (pixd == pixs) {  /* in-place; generate a temp tileImage */
             if ((pixt = pixCopy(NULL, pixs)) == NULL)
                 return (PIX *)ERROR_PTR("pixt not made", procName, pixd);
             datat = pixGetData(pixt) + 32 * wpls + 1;
@@ -196,7 +196,7 @@ PIX       *pixt;
 ---         fmorphopgen_low_*(datad, w, h, wpld, datas, wpls, index);
         }
     }
-    else {  /* opening or closing; generate a temp image */
+    else {  /* opening or closing; generate a temp tileImage */
         if ((pixt = pixCreateTemplate(pixs)) == NULL)
             return (PIX *)ERROR_PTR("pixt not made", procName, pixd);
         datat = pixGetData(pixt) + 32 * wpls + 1;

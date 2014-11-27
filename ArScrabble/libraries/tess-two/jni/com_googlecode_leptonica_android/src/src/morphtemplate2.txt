@@ -73,11 +73,11 @@ l_int32
  *                 Low-level auto-generated static routines                 *
  *--------------------------------------------------------------------------*/
 /*
- *  N.B.  In all the low-level routines, the part of the image
+ *  N.B.  In all the low-level routines, the part of the tileImage
  *        that is accessed has been clipped by 32 pixels on
  *        all four sides.  This is done in the higher level
  *        code by redefining w and h smaller and by moving the
- *        start-of-image pointers up to the beginning of this
+ *        start-of-tileImage pointers up to the beginning of this
  *        interior rectangle.
  */
 ---   static void fdilate_*_*(l_uint32  *datad,

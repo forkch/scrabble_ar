@@ -67,7 +67,6 @@ public class ImageTargetRenderer implements GLSurfaceView.Renderer {
     private static final float OBJECT_SCALE_FLOAT = 3.0f;
 
 
-
     public ImageTargetRenderer(ImageTargetsActivity activity,
                                ApplicationSession session) {
         mActivity = activity;
@@ -180,7 +179,7 @@ public class ImageTargetRenderer implements GLSurfaceView.Renderer {
             ImageTarget imageTarget = (ImageTarget) trackable;
             ImageTargetResult imageTargetResult = (ImageTargetResult) result;
 
-            final Image image = state.getFrame().getImage(0);
+            final Image image = state.getFrame().getTileImage(0);
 
             final int imageWidth = image.getWidth();
             final int imageHeight = image.getHeight();

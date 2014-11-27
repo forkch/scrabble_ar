@@ -45,17 +45,13 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
-import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import java.util.Vector;
 
 import ch.zuehlke.arscrabble.vuforiautils.Texture;
@@ -66,6 +62,7 @@ import static ch.zuehlke.arscrabble.VectorUtils.vecToPoint;
 
 public class ImageTargetsActivity extends Activity implements ApplicationControl {
     private static final String LOGTAG = "ImageTargets";
+    private static final String LOGTAG_OCR = "ImageTargets(OCR)";
     public static final int MINIMAL_OCR_CONFIDENCE = 60;
 
     ApplicationSession vuforiaAppSession;
@@ -437,9 +434,9 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             boolean drawCircles = true;
             boolean rectify = true;
             boolean drawBorder = false;
-            boolean drawSegmentationLines = rectify && false;
-            boolean segment = rectify && true;
-            boolean scanScrabbleBoard = rectify && false;
+            boolean drawSegmentationLines = rectify && true;
+            boolean debugSomeSegments = rectify && true;
+            boolean scanScrabbleBoard = rectify && true;
 
             if (imageFromFrame != null) {
                 ByteBuffer pixels = imageFromFrame.getPixels();
@@ -493,23 +490,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                         Mat rectified = drawBorder(imageMat);
                     }
 
-//                    final Mat grayscale = new Mat();
-//                    imageMat = imageMat.submat(5, imageMat.rows()-5, 5, imageMat.cols()-5);
-//                    Imgproc.cvtColor(imageMat, grayscale, Imgproc.COLOR_RGB2GRAY);
-//                    Imgproc.Canny(imageMat, imageMat, 50, 50);
-//
-//
-//                    List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-//                    MatOfPoint hierarchy = new MatOfPoint();
-//                    Imgproc.findContours(grayscale, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE, new Point(5, 5));
-//
-//                    final Random random = new Random();
-//                    for (int i = 0; i < contours.size(); i++) {
-//                        Scalar color = new Scalar(random.nextInt(255), random.nextInt(255), random.nextInt(255));
-//                        Imgproc.drawContours(imageMat, contours, i, color, 2, 8, hierarchy, 0, new Point());
-//                    }
-
-                    if (segment) {
+                    if (debugSomeSegments) {
                         Mat scrabbleTile = ScrabbleBoardSegmentator.getScrabbleTile(imageMat, singleSegmentX, singleSegmentY, ScrabbleBoardMetrics.metricsFromImage(imageMat));
                         performOCR(scrabbleTile, true);
                         singleSegmentX++;
@@ -560,40 +541,39 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         }
     }
 
-
     private void scanScrabbleboard(Mat image) {
+        long tic = System.currentTimeMillis();
         final ScrabbleBoardMetrics scrabbleBoardMetrics = ScrabbleBoardMetrics.metricsFromImage(image);
-        for (int horizontalIdx = 0; horizontalIdx < 8; horizontalIdx++) {
-            for (int verticalIdx = 0; verticalIdx < 8; verticalIdx++) {
+        for (int horizontalIdx = 0; horizontalIdx < 16; horizontalIdx++) {
+            for (int verticalIdx = 0; verticalIdx < 16; verticalIdx++) {
                 final Mat scrabbleTile = ScrabbleBoardSegmentator.getScrabbleTile(image, horizontalIdx, verticalIdx, scrabbleBoardMetrics);
                 OCRResult ocrResult = performOCR(scrabbleTile, false);
-                if (ocrResult.getConfidence() > MINIMAL_OCR_CONFIDENCE) {
-                    Log.i(LOGTAG, "tile at (" + horizontalIdx + "," + verticalIdx + "): " + ocrResult);
+                if (ocrResult.hasLetterBeenDetected()) {
+                    Log.i(LOGTAG_OCR, "tile at (" + horizontalIdx + "," + verticalIdx + "): " + ocrResult);
                 }
             }
         }
+        Log.d(LOGTAG_OCR, "scanScrabbleBoard in " + (System.currentTimeMillis() - tic) + "ms");
 
     }
 
     public OCRResult performOCR(Mat scrabbleTile, boolean debug) {
-        Mat processedTile = enhanceTileImage(scrabbleTile, debug);
+        TileImage processedTile = enhanceTileImage(scrabbleTile, debug);
         OCRResult ocrResult;
-        if (processedTile != null) {
+        if (processedTile.isScrabbleTileProbable()) {
             if (debug) {
-                putMatOnImageView(processedTile, segmentBitmap, segmentImageView);
+                putMatOnImageView(processedTile.getTileImage(), segmentBitmap, segmentImageView);
                 ocrTextView.setText("");
             }
 
-            long tic = System.currentTimeMillis();
-            ocrResult = callTeseract(processedTile);
-            Log.d(LOGTAG, "ocr in " + (System.currentTimeMillis() - tic) + "ms");
+            ocrResult = callTeseract(processedTile.getTileImage());
         } else {
-            ocrResult = new OCRResult("", 0);
+            ocrResult = OCRResult.createNoLetterFound();
         }
         if (debug) {
             String character;
-            if (ocrResult.getConfidence() < 60) {
-                character = "-----";
+            if (ocrResult.hasLetterBeenDetected()) {
+                character = "n/a";
             } else {
                 character = ocrResult.getLetter();
             }
@@ -603,32 +583,30 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     }
 
     public OCRResult callTeseract(Mat processedTile) {
-        long tic;
         try {
-            byte[] imageData = new byte[(int) (processedTile.cols() * processedTile.rows() *
+            byte[] imageData = new byte[(processedTile.cols() * processedTile.rows() *
                     processedTile.channels())];
 
             processedTile.get(0, 0, imageData);
 
             tessBaseAPI.setImage(imageData, processedTile.cols(), processedTile.rows(), processedTile.channels(), processedTile.cols() * processedTile.channels());
 
-            tic = System.currentTimeMillis();
             String textResult = tessBaseAPI.getUTF8Text();
             final int confidence = tessBaseAPI.meanConfidence();
             tessBaseAPI.clear();
 
-            if (confidence < 60) {
-                return new OCRResult("", 0);
+            if (confidence < MINIMAL_OCR_CONFIDENCE) {
+                return OCRResult.createNoLetterFound();
             }
 
-            return new OCRResult(textResult, confidence);
+            return OCRResult.createForLetterFound(textResult);
         } catch (Exception x) {
-            Log.e(LOGTAG, "error", x);
-            return new OCRResult("", 0);
+            Log.e(LOGTAG_OCR, "error", x);
+            return OCRResult.createNoLetterFound();
         }
     }
 
-    public Mat enhanceTileImage(Mat scrabbleTile, boolean debug) {
+    public TileImage enhanceTileImage(Mat scrabbleTile, boolean debug) {
         int pixelsToRemove = 3;
         Mat cropped = scrabbleTile.submat(pixelsToRemove, scrabbleTile.rows() - pixelsToRemove, pixelsToRemove, scrabbleTile.cols() - pixelsToRemove);
 
@@ -644,12 +622,12 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             if (debug) {
                 putMatOnImageView(grayscale, segmentBitmap, segmentImageView);
             }
-            return null;
+            return TileImage.createNoTilePresent();
         }
 
         final Mat threshold = new Mat();
         Imgproc.threshold(grayscale, threshold, 200, 255, 0);
-        return threshold;
+        return TileImage.createTilePresent(threshold);
     }
 
     public void putMatOnImageView(Mat image, Bitmap bitmap, ImageView imageView) {

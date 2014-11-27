@@ -4,20 +4,34 @@ package ch.zuehlke.arscrabble;
  * Created with love by fork on 26.11.14.
  */
 public class OCRResult {
+
+    private final String letter;
+    private final boolean letterBeenDetected;
+
+    public static OCRResult createNoLetterFound() {
+        return new OCRResult("", false);
+    }
+
+    public static OCRResult createForLetterFound(String letter) {
+        return new OCRResult(letter, true);
+    }
+
+    private OCRResult(String letter, boolean letterBeenDetected) {
+        this.letter = letter;
+        this.letterBeenDetected = letterBeenDetected;
+    }
+
     public String getLetter() {
         return letter;
     }
 
-    public int getConfidence() {
-        return confidence;
+    public boolean hasLetterBeenDetected() {
+        return letterBeenDetected;
     }
 
-    private final String letter;
-    private final int confidence;
-
-    public OCRResult(String letter, int confidence) {
-
-        this.letter = letter;
-        this.confidence = confidence;
+    @Override
+    public String toString() {
+        return letterBeenDetected ? letter : "n/a";
     }
+
 }
