@@ -44,14 +44,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import ch.zuehlke.arscrabble.model.scrabble.engine.Board;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Letter;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Player;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Rack;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Scrabble;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Stone;
 import ch.zuehlke.arscrabble.model.scrabble.engine.StoneBag;
-import ch.zuehlke.arscrabble.model.scrabble.engine.StoneType;
 import ch.zuehlke.arscrabble.model.scrabble.solver.ScrabbleSolver;
 import ch.zuehlke.arscrabble.model.scrabble.solver.VirtualStone;
 import ch.zuehlke.arscrabble.vision.ScrabbleBoardMetrics;
@@ -60,21 +58,23 @@ import ch.zuehlke.arscrabble.vuforiautils.SampleMath;
 /**
  * Created by ssh on 25.11.2014.
  */
-public class JMonkeyApplication extends SimpleApplication implements Vuforia.UpdateCallbackInterface {
+public class JMonkeyApplication extends SimpleApplication {
     private Material backgroundCameraMaterial;
     private Texture2D backgroundCameraTexture;
     private Spatial backgroundCameraGeometry;
     private Image backgroundCameraImage;
     private ByteBuffer backgroundImageBuffer;
-    private boolean hasBackgroundImage;
     private Camera backgroundCamera;
     private Camera foregroundCamera;
     private DataSet mCurrentDataset;
     private HashMap<VirtualStone, Spatial> virtualStones = new HashMap<VirtualStone, Spatial>();
     private ScrabbleBoardMetrics metrics;
-    private Board board = new Board();
     private Scrabble game;
     private Player stefan;
+    private ScrabbleSolver scrabbleSolver;
+
+    private boolean isBoardTracked;
+    private boolean isBoardVisible;
 
     @Override
     public void simpleInitApp() {
@@ -90,9 +90,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         initForegroundScene();
 
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB888, true);
-        Vuforia.registerCallback(this);
 
-        /* GAME */
         game = new Scrabble();
 
         stefan = new Player("Stefan", new Rack(getStefansStones(game.getStoneBag())));
@@ -102,18 +100,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         game.addPlayer(benjamin);
 
         game.start();
-         /* GAME */
-
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 1);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 2);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 3);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 4);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 5);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 6);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 7);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 8);
-
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 8, 8);
+        scrabbleSolver = new ScrabbleSolver(game);
     }
 
     private static List<Stone> getStefansStones(StoneBag stoneBag) {
@@ -213,19 +200,62 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
 
     @Override
     public void simpleUpdate(float tpf) {
-        updateTracking();
-        updateBoard();
-        updateBackgroundVideo(tpf);
+        // First get the current state from Vuforia
+        // -> We get tracking informations and the current image/frame
+        State currentState = Renderer.getInstance().begin();
+
+        updateBackgroundVideoImage(currentState, tpf);
+        updateJMonkeyCameraByVuforiaState(currentState);
+
+        if (isBoardTracked) {
+            showBoard();
+        } else {
+            hideBoard();
+        }
     }
 
-    private void updateBoard() {
+    private void hideBoard() {
+        for (Spatial stone : virtualStones.values()) {
+            rootNode.detachChild(stone);
+        }
 
-        ScrabbleSolver solver = new ScrabbleSolver(game);
-        List<VirtualStone> allVirtualStones = solver.getWord(stefan);
+        isBoardVisible = false;
+    }
 
-        // Which stones have to be removed?
+    private void showBoard() {
+        if (!isBoardVisible) {
+            for (Spatial stone : virtualStones.values()) {
+                rootNode.attachChild(stone);
+            }
+
+            isBoardVisible = true;
+        }
+
+        List<VirtualStone> allVirtualStones = scrabbleSolver.getWord(stefan);
+
+        removeNotExistingStones(allVirtualStones);
+        addNewStones(allVirtualStones);
+    }
+
+    private void addNewStones(List<VirtualStone> allVirtualStones) {
+        List<VirtualStone> stonesToAdd = new ArrayList<VirtualStone>();
+        for (VirtualStone newStone : allVirtualStones) {
+
+            if (!virtualStones.containsKey(newStone)) {
+                stonesToAdd.add(newStone);
+            }
+        }
+
+        for (VirtualStone stoneToAdd : stonesToAdd) {
+            Spatial stoneSpatial = createStone();
+            moveToField(stoneSpatial, stoneToAdd.getX(), stoneToAdd.getY());
+            rootNode.attachChild(stoneSpatial);
+            virtualStones.put(stoneToAdd, stoneSpatial);
+        }
+    }
+
+    private void removeNotExistingStones(List<VirtualStone> allVirtualStones) {
         List<VirtualStone> stonesToRemove = new ArrayList<VirtualStone>();
-
         for (VirtualStone existingStone : virtualStones.keySet()) {
             boolean found = false;
             for (VirtualStone virtualStone : allVirtualStones) {
@@ -243,44 +273,25 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
             rootNode.detachChild(virtualStones.get(stoneToRemove));
             virtualStones.remove(stoneToRemove);
         }
-
-        // Which stones are new and have to be added?
-        List<VirtualStone> stonesToAdd = new ArrayList<VirtualStone>();
-        for (VirtualStone newStone : allVirtualStones) {
-
-            if (!virtualStones.containsKey(newStone)) {
-                stonesToAdd.add(newStone);
-            }
-        }
-
-        for (VirtualStone stoneToAdd : stonesToAdd) {
-            Spatial stoneSpatial = createStone();
-            moveToField(stoneSpatial, stoneToAdd.getX(), stoneToAdd.getY());
-            rootNode.attachChild(stoneSpatial);
-            virtualStones.put(stoneToAdd, stoneSpatial);
-        }
     }
 
     private void updateBackgroundVideo(float tpf) {
-        if (hasBackgroundImage) {
-            backgroundCameraTexture.setImage(backgroundCameraImage);
-            backgroundCameraMaterial.setTexture("ColorMap", backgroundCameraTexture);
-        }
 
-        // TODO: WTF? Why we need this method? Crash without...
-        backgroundCameraGeometry.updateLogicalState(tpf);
-        backgroundCameraGeometry.updateGeometricState();
     }
 
     private void moveToField(Spatial stone, int x, int y) {
+
+        // TODO: Where to add this? -> Solver is 0 based we are 1 based
+        x++;
+        y++;
 
         // Initial stone position -> x = 8 / y = 8
         x = x - 8;
         y = (y - 8) * -1;
 
-        int lineWidth = 6;
+        float lineWidth = 5.8f;
 
-        int totalWidth = metrics.getCellWidth() * 15 + metrics.getMarginLeft() + metrics.getMarginRight() + 16 * lineWidth;
+        int totalWidth = metrics.getCellWidth() * 15 + metrics.getMarginLeft() + metrics.getMarginRight();
         float multiplicator = 100.0f / totalWidth;
 
         // Move stone to center (H8)
@@ -335,8 +346,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         backgroundImageBuffer.clear();
     }
 
-    @Override
-    public void QCAR_onUpdate(State state) {
+    public void updateBackgroundVideoImage(State state, float tpf) {
         com.qualcomm.vuforia.Image image = getRGB888Image(state.getFrame());
 
         if (image != null) {
@@ -353,10 +363,15 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
             backgroundImageBuffer.put(pixelArray);
             backgroundCameraImage.setData(backgroundImageBuffer);
 
-            hasBackgroundImage = true;
-
             Mat imageMat = Mat.zeros(image.getHeight(), image.getWidth(), CvType.CV_8UC3);
             metrics = new ScrabbleBoardMetrics(imageMat);
+
+            backgroundCameraTexture.setImage(backgroundCameraImage);
+            backgroundCameraMaterial.setTexture("ColorMap", backgroundCameraTexture);
+
+            // TODO: WTF? Why we need this method? Crash without...
+            backgroundCameraGeometry.updateLogicalState(tpf);
+            backgroundCameraGeometry.updateGeometricState();
         }
     }
 
@@ -372,12 +387,12 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         return image;
     }
 
-    private void updateTracking() {
-        State currentState = Renderer.getInstance().begin();
-        int numberOfTrackableResults = currentState.getNumTrackableResults();
+    private void updateJMonkeyCameraByVuforiaState(State currentState) {
+        isBoardTracked = currentState.getNumTrackableResults() > 0;
 
-        for (int tIdx = 0; tIdx < numberOfTrackableResults; tIdx++) {
-            TrackableResult result = currentState.getTrackableResult(tIdx);
+        if (isBoardTracked) {
+
+            TrackableResult result = currentState.getTrackableResult(0);
 
             final Matrix34F pose = result.getPose();
             Matrix44F modelViewMatrixVuforia = Tool.convertPose2GLMatrix(pose);
@@ -404,10 +419,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
             setCameraPoseNative(cam_x, cam_y, cam_z);
             setCameraOrientation(cam_right_x, cam_right_y, cam_right_z, cam_up_x, cam_up_y, cam_up_z, cam_dir_x, cam_dir_y, cam_dir_z);
 
-            float nearPlane = 1.0f;
-            float farPlane = 1000.0f;
             CameraCalibration cameraCalibration = CameraDevice.getInstance().getCameraCalibration();
-
             VideoBackgroundConfig config = Renderer.getInstance().getVideoBackgroundConfig();
 
             float viewportWidth = config.getSize().getData()[0];
@@ -425,13 +437,13 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
             float screenWidth = settings.getWidth();
             float screenHeight = settings.getHeight();
             if (viewportWidth != screenWidth) {
-                viewportDistort = viewportWidth / (float) screenWidth;
+                viewportDistort = viewportWidth / screenWidth;
                 fovDegrees = fovDegrees * viewportDistort;
                 aspectRatio = aspectRatio / viewportDistort;
             }
 
             if (viewportHeight != screenHeight) {
-                viewportDistort = viewportHeight / (float) screenHeight;
+                viewportDistort = viewportHeight / screenHeight;
                 fovDegrees = fovDegrees / viewportDistort;
                 aspectRatio = aspectRatio * viewportDistort;
             }
