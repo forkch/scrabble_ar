@@ -43,8 +43,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import ch.zuehlke.arscrabble.ScrabbleBoardMetrics;
 import ch.zuehlke.arscrabble.model.Board;
+import ch.zuehlke.arscrabble.vision.ScrabbleBoardMetrics;
 import ch.zuehlke.arscrabble.vuforiautils.SampleMath;
 
 /**
@@ -61,6 +61,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     private Camera foregroundCamera;
     private DataSet mCurrentDataset;
     private HashMap<String, Spatial> virtualStones = new HashMap<String, Spatial>();
+    private ScrabbleBoardMetrics metrics;
 
     @Override
     public void simpleInitApp() {
@@ -160,13 +161,12 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     private void updateBoard() {
         // Get all stones to be drawn virtually
         Board board = new Board();
+        //board.placeLetterStone(Letter.U,1,1);
 
         // Which stones have to be removed?
 
 
         // Which stones are new and have to be added?
-
-
     }
 
     private void updateBackgroundVideo(float tpf) {
@@ -180,7 +180,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         backgroundCameraGeometry.updateGeometricState();
     }
 
-    private ScrabbleBoardMetrics metrics;
+
 
 //    private void drawBoard(Board board) {
 //

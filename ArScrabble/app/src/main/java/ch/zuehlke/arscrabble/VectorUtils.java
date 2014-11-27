@@ -77,7 +77,7 @@ public class VectorUtils {
 
         final CameraCalibration cameraCalibration = CameraDevice.getInstance().getCameraCalibration();
         float scale = viewWidth / videoMode.getWidth();
-        if (((float)videoMode.getHeight() * scale) < viewHeight) {
+        if (((float) videoMode.getHeight() * scale) < viewHeight) {
             scale = viewHeight / videoMode.getHeight();
         }
         float scaledWidth = videoMode.getWidth() * scale;
@@ -204,14 +204,14 @@ public class VectorUtils {
         return new TrackerCorners(centerImageSpace, upperLeftImageSpace, upperRightImageSpace, lowerLeftImageSpace, lowerRightImageSpace);
     }
 
-    public static boolean allCornersVisible(Point[] corners) {
+    public static boolean allCornersVisible(Point[] corners, Mat inputMat) {
 
         if (corners.length != 4) {
             // Error
             return false;
         }
         for (Point corner : corners) {
-            if (corner.x < 0 || corner.y < 0) {
+            if (corner.x < 0 || corner.y < 0 || corner.x > inputMat.cols() || corner.y > inputMat.rows()) {
                 return false;
             }
         }

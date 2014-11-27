@@ -7,9 +7,17 @@ import java.util.List;
  * Created by chsueess on 25.11.14.
  */
 public class Word {
-    List<Letter> letters = new ArrayList<Letter>();
+    List<Stone> stones = new ArrayList<Stone>();
 
-    public void addLetter(Letter letter) {
-        letters.add(letter);
+    public Word(String wordString, StoneType stoneType) {
+        for(char letter : wordString.toCharArray()) {
+            addStone(new Stone(Letter.getLetterFor(letter), stoneType));
+        }
     }
+
+    public void addStone(Stone stone) {
+        stones.add(stone);
+    }
+
+
 }

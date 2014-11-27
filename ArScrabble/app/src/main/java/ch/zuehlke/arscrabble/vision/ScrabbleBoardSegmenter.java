@@ -1,4 +1,4 @@
-package ch.zuehlke.arscrabble;
+package ch.zuehlke.arscrabble.vision;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -8,9 +8,9 @@ import org.opencv.core.Scalar;
 /**
  * Created with love by fork on 25.11.14.
  */
-public class ScrabbleBoardSegmentator {
+public class ScrabbleBoardSegmenter {
 
-    private static final String LOGTAG = ScrabbleBoardSegmentator.class.getSimpleName();
+    private static final String LOGTAG = ScrabbleBoardSegmenter.class.getSimpleName();
 
     private static Scalar horizontalLineColor = new Scalar(255, 0, 0);
     private static Scalar verticalLineColor = new Scalar(0, 255, 0);
