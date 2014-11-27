@@ -41,9 +41,13 @@ import org.opencv.core.Mat;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
 
 import ch.zuehlke.arscrabble.model.Board;
+import ch.zuehlke.arscrabble.model.Letter;
+import ch.zuehlke.arscrabble.model.Stone;
+import ch.zuehlke.arscrabble.model.StoneType;
+import ch.zuehlke.arscrabble.model.fields.SimpleField;
 import ch.zuehlke.arscrabble.vision.ScrabbleBoardMetrics;
 import ch.zuehlke.arscrabble.vuforiautils.SampleMath;
 
@@ -60,8 +64,9 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     private Camera backgroundCamera;
     private Camera foregroundCamera;
     private DataSet mCurrentDataset;
-    private HashMap<String, Spatial> virtualStones = new HashMap<String, Spatial>();
+    private List<VirtualStone> virtualStones = new ArrayList<VirtualStone>();
     private ScrabbleBoardMetrics metrics;
+    private Board board = new Board();
 
     @Override
     public void simpleInitApp() {
@@ -78,6 +83,17 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
 
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB888, true);
         Vuforia.registerCallback(this);
+
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 1);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 2);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 3);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 4);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 5);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 6);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 7);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 8);
+
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 8, 8);
     }
 
     private void initTrackers() {
@@ -118,7 +134,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     private Spatial createStone() {
         Spatial stone = assetManager.loadModel("Models/Stone/stone_u.obj");
         stone.rotate((float) (Math.PI / 2), 0, (float) Math.PI);
-        stone.scale(0.26f);
+        stone.scale(0.27f);
         return stone;
     }
 
@@ -158,15 +174,89 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         updateBackgroundVideo(tpf);
     }
 
+    private class VirtualStone {
+        public Stone stone;
+        public int x;
+        public int y;
+        public Spatial spatial;
+
+        public VirtualStone(Stone stone, int x, int y) {
+            this.stone = stone;
+            this.x = x;
+            this.y = y;
+        }
+
+        public boolean equals(VirtualStone virtualStone) {
+            if (this == virtualStone) {
+                return true;
+            }
+
+            return x == virtualStone.x && y == virtualStone.y && stone.getLetter() == virtualStone.stone.getLetter();
+        }
+    }
+
     private void updateBoard() {
         // Get all stones to be drawn virtually
-        Board board = new Board();
-        //board.placeLetterStone(Letter.U,1,1);
+        List<VirtualStone> allVirtualStones = new ArrayList<VirtualStone>();
+
+        SimpleField[][] fields = board.getFields();
+        for (int x = 0; x < fields.length; x++) {
+
+            SimpleField[] row = fields[x];
+            for (int y = 0; y < fields.length; y++) {
+                SimpleField field = row[y];
+                Stone stone = field.getStone();
+
+                if (stone != null && stone.isVirtual()) {
+                    allVirtualStones.add(new VirtualStone(stone, x, y));
+                }
+            }
+        }
 
         // Which stones have to be removed?
+        List<VirtualStone> stonesToRemove = new ArrayList<VirtualStone>();
+        for (VirtualStone existingStone : virtualStones) {
+            boolean found = false;
+            for (VirtualStone virtualStone : allVirtualStones) {
+                if (existingStone.equals(virtualStone)) {
+                    found = true;
+                }
+            }
 
+            if (!found) {
+                stonesToRemove.add(existingStone);
+            }
+        }
+
+        for (VirtualStone stoneToRemove : stonesToRemove) {
+            rootNode.detachChild(stoneToRemove.spatial);
+            virtualStones.remove(stoneToRemove);
+        }
 
         // Which stones are new and have to be added?
+        List<VirtualStone> stonesToAdd = new ArrayList<VirtualStone>();
+        for (VirtualStone newStone : allVirtualStones) {
+            boolean found = false;
+            for (VirtualStone existingStone : virtualStones) {
+                if (newStone.equals(existingStone)) {
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                stonesToAdd.add(newStone);
+            }
+        }
+
+        for (VirtualStone stoneToAdd : stonesToAdd) {
+
+            Spatial stoneSpatial = createStone();
+            moveToField(stoneSpatial, stoneToAdd.x, stoneToAdd.y);
+            stoneToAdd.spatial = stoneSpatial;
+            rootNode.attachChild(stoneSpatial);
+
+            virtualStones.add(stoneToAdd);
+        }
     }
 
     private void updateBackgroundVideo(float tpf) {
@@ -180,67 +270,15 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         backgroundCameraGeometry.updateGeometricState();
     }
 
-
-
-//    private void drawBoard(Board board) {
-//
-//        // TODO: Search better place for metrics init XD
-//        if (metrics == null) {
-//            return;
-//        }
-//
-//        // Remove old virtual stones from screen
-//        for (Spatial stone : virtualStones) {
-//            rootNode.detachChild(stone);
-//        }
-//
-//        virtualStones.clear();
-//
-//
-//        Spatial stone = createStone();
-//        moveToField(stone, 1, 1);
-//        rootNode.attachChild(stone);
-//        virtualStones.add(stone);
-//
-//        Spatial stone2 = createStone();
-//        moveToField(stone2, 15, 1);
-//        rootNode.attachChild(stone2);
-//        virtualStones.add(stone2);
-//
-//        Spatial stone3 = createStone();
-//        moveToField(stone3, 1, 15);
-//        rootNode.attachChild(stone3);
-//        virtualStones.add(stone3);
-//
-//        Spatial stone4 = createStone();
-//        moveToField(stone4, 15, 15);
-//        rootNode.attachChild(stone4);
-//        virtualStones.add(stone4);
-//
-//        Spatial stoneCenter = createStone();
-//        moveToField(stoneCenter, 8, 8);
-//        rootNode.attachChild(stoneCenter);
-//        virtualStones.add(stoneCenter);
-//
-////        for (int i = 1; i <= 1; i++) {
-////            for (int j = 1; j <= 15; j++) {
-////                Spatial stone = createStone();
-////                moveToField(stone, i, j);
-////                rootNode.attachChild(stone);
-////                virtualStones.add(stone);
-////            }
-////        }
-//    }
-
     private void moveToField(Spatial stone, int x, int y) {
 
         // Initial stone position -> x = 8 / y = 8
         x = x - 8;
         y = (y - 8) * -1;
 
-        int lineWidth = 5;
+        int lineWidth = 6;
 
-        int totalWidth = metrics.getCellWidth() * 15 + metrics.getMarginLeft() + metrics.getMarginRight();
+        int totalWidth = metrics.getCellWidth() * 15 + metrics.getMarginLeft() + metrics.getMarginRight() + 16 * lineWidth;
         float multiplicator = 100.0f / totalWidth;
 
         // Move stone to center (H8)
