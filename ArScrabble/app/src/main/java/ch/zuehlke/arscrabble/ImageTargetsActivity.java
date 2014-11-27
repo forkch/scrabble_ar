@@ -42,31 +42,22 @@ import com.qualcomm.vuforia.Vuforia;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfPoint;
-import org.opencv.core.Point;
-import org.opencv.core.Scalar;
-import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import java.util.Vector;
 
+import ch.zuehlke.arscrabble.vision.BoardDetection;
 import ch.zuehlke.arscrabble.vuforiautils.Texture;
 
 import static ch.zuehlke.arscrabble.VectorUtils.calcCorners;
-import static ch.zuehlke.arscrabble.VectorUtils.vecToPoint;
 
 
 public class ImageTargetsActivity extends Activity implements ApplicationControl {
     private static final String LOGTAG = "ImageTargets";
-    public static final int MINIMAL_OCR_CONFIDENCE = 60;
+    private static final String LOGTAG_OCR = "ImageTargets(OCR)";
 
     ApplicationSession vuforiaAppSession;
 
@@ -98,7 +89,6 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
     boolean mIsDroidDevice = false;
 
-    private int frameCounter;
     private Bitmap processedBitmap;
     private Bitmap liveBitmap;
     private Bitmap segmentBitmap;
@@ -107,9 +97,8 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     private ImageView segmentImageView;
     private TextView ocrTextView;
     private TextView divTextView;
+    private BoardDetection boardDetection;
     private TessBaseAPI tessBaseAPI;
-    private int singleSegmentX = 0;
-    private int singleSegmentY = 0;
 
 
     // Called when the activity first starts or the user navigates back to an
@@ -124,6 +113,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         segmentImageView = (ImageView) findViewById(R.id.segment);
         ocrTextView = (TextView) findViewById(R.id.ocr);
         divTextView = (TextView) findViewById(R.id.div);
+
 
         vuforiaAppSession = new ApplicationSession(this);
 
@@ -143,8 +133,44 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
         initializeTesseract();
 
+        boardDetection = new BoardDetection(this, tessBaseAPI);
+
     }
 
+    public void putMatOnLiveImageView(Mat imageMat) {
+        putMatOnImageView(imageMat, liveBitmap, liveImageView);
+    }
+
+    private void putMatOnImageView(Mat image, Bitmap bitmap, ImageView imageView) {
+        // convert to bitmap:
+        if (bitmap != null) {
+            bitmap.recycle();
+        }
+
+        bitmap = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(image, bitmap);
+        imageView.setImageBitmap(bitmap);
+
+
+    }
+
+    public void putMatOnProcessedImageView(Mat imageMat) {
+        putMatOnImageView(imageMat, processedBitmap, processedImageView);
+    }
+
+    public void putMatOnSegmentImageView(Mat tileImage) {
+        putMatOnImageView(tileImage, segmentBitmap, segmentImageView);
+    }
+
+    public void setOCRTextView(String s) {
+
+        ocrTextView.setText(s);
+    }
+
+    public void setDivTextView(String s) {
+
+        divTextView.setText(s);
+    }
 
     // Process Single Tap event to trigger autofocus
     private class GestureListener extends
@@ -434,12 +460,6 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 }
             }
 
-            boolean drawCircles = true;
-            boolean rectify = true;
-            boolean drawBorder = false;
-            boolean drawSegmentationLines = rectify && false;
-            boolean segment = rectify && true;
-            boolean scanScrabbleBoard = rectify && false;
 
             if (imageFromFrame != null) {
                 ByteBuffer pixels = imageFromFrame.getPixels();
@@ -449,100 +469,9 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 int imageHeight = imageFromFrame.getHeight();
                 int stride = imageFromFrame.getStride();
 
-
-                Mat imageMat = Mat.zeros(imageHeight, imageWidth, CvType.CV_8UC3);
-                imageMat.put(0, 0, pixelArray);
-
-                final Scalar red = new Scalar(255, 0, 0);
-                final Scalar green = new Scalar(0, 255, 0);
-                final Scalar blue = new Scalar(0, 0, 255);
-                final Scalar yellow = new Scalar(255, 255, 0);
-                final Scalar cyan = new Scalar(0, 255, 255);
-
-                final Point center = vecToPoint(corners.getCenter());
-                final Point upperLeft = vecToPoint(corners.getUpperLeft());
-                final Point upperRight = vecToPoint(corners.getUpperRight());
-                final Point lowerLeft = vecToPoint(corners.getLowerLeft());
-                final Point lowerRight = vecToPoint(corners.getLowerRight());
-
-                if (drawCircles) {
-                    drawCornerCircles(imageMat, red, green, blue, yellow, cyan, center, upperLeft, upperRight, lowerLeft, lowerRight);
-                }
-
-                putMatOnImageView(imageMat, liveBitmap, liveImageView);
-
-                boolean computationFrame;
-                if (frameCounter < 5) {
-                    frameCounter++;
-                    computationFrame = false;
-                } else {
-                    frameCounter = 0;
-                    computationFrame = true;
-                }
-
-                if (computationFrame) {
-                    Log.i(LOGTAG, "RECALCULATING BOARD");
-
-
-                    if (rectify) {
-                        imageMat = RectifyAlgorithm.rectifyToInputMat(imageMat, new Point[]{upperLeft, upperRight, lowerLeft, lowerRight});
-
-                        logElapsedTime("rectification: ", tic);
-                    }
-                    if (drawBorder) {
-                        Mat rectified = drawBorder(imageMat);
-                    }
-
-//                    final Mat grayscale = new Mat();
-//                    imageMat = imageMat.submat(5, imageMat.rows()-5, 5, imageMat.cols()-5);
-//                    Imgproc.cvtColor(imageMat, grayscale, Imgproc.COLOR_RGB2GRAY);
-//                    Imgproc.Canny(imageMat, imageMat, 50, 50);
-//
-//
-//                    List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-//                    MatOfPoint hierarchy = new MatOfPoint();
-//                    Imgproc.findContours(grayscale, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE, new Point(5, 5));
-//
-//                    final Random random = new Random();
-//                    for (int i = 0; i < contours.size(); i++) {
-//                        Scalar color = new Scalar(random.nextInt(255), random.nextInt(255), random.nextInt(255));
-//                        Imgproc.drawContours(imageMat, contours, i, color, 2, 8, hierarchy, 0, new Point());
-//                    }
-
-                    if (segment) {
-                        Mat scrabbleTile = ScrabbleBoardSegmentator.getScrabbleTile(imageMat, singleSegmentX, singleSegmentY, ScrabbleBoardMetrics.metricsFromImage(imageMat));
-                        performOCR(scrabbleTile, true);
-                        singleSegmentX++;
-
-                        if (singleSegmentX == 4) {
-                            singleSegmentX = 0;
-                            singleSegmentY++;
-                        }
-                        if (singleSegmentY == 4) {
-                            singleSegmentY = 0;
-                        }
-
-
-                    }
-
-                    if (scanScrabbleBoard) {
-                        scanScrabbleboard(imageMat);
-                    }
-
-                    if (drawSegmentationLines) {
-                        imageMat = ScrabbleBoardSegmentator.drawSegmentationLines(imageMat);
-                    }
-
-
-                    Mat toDraw = imageMat;
-                    putMatOnImageView(imageMat, processedBitmap, processedImageView);
-                    logElapsedTime("total computation took: ", tic);
-                }
-                imageMat.release();
-
+                boardDetection.detectBoard(pixelArray, imageWidth, imageHeight, corners);
             }
         }
-
 
         if (mSwitchDatasetAsap) {
             mSwitchDatasetAsap = false;
@@ -558,129 +487,6 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             doUnloadTrackersData();
             doLoadTrackersData();
         }
-    }
-
-
-    private void scanScrabbleboard(Mat image) {
-        final ScrabbleBoardMetrics scrabbleBoardMetrics = ScrabbleBoardMetrics.metricsFromImage(image);
-        for (int horizontalIdx = 0; horizontalIdx < 8; horizontalIdx++) {
-            for (int verticalIdx = 0; verticalIdx < 8; verticalIdx++) {
-                final Mat scrabbleTile = ScrabbleBoardSegmentator.getScrabbleTile(image, horizontalIdx, verticalIdx, scrabbleBoardMetrics);
-                OCRResult ocrResult = performOCR(scrabbleTile, false);
-                if (ocrResult.getConfidence() > MINIMAL_OCR_CONFIDENCE) {
-                    Log.i(LOGTAG, "tile at (" + horizontalIdx + "," + verticalIdx + "): " + ocrResult);
-                }
-            }
-        }
-
-    }
-
-    public OCRResult performOCR(Mat scrabbleTile, boolean debug) {
-        Mat processedTile = enhanceTileImage(scrabbleTile, debug);
-        OCRResult ocrResult;
-        if (processedTile != null) {
-            if (debug) {
-                putMatOnImageView(processedTile, segmentBitmap, segmentImageView);
-                ocrTextView.setText("");
-            }
-
-            long tic = System.currentTimeMillis();
-            ocrResult = callTeseract(processedTile);
-            Log.d(LOGTAG, "ocr in " + (System.currentTimeMillis() - tic) + "ms");
-        } else {
-            ocrResult = new OCRResult("", 0);
-        }
-        if (debug) {
-            String character;
-            if (ocrResult.getConfidence() < 60) {
-                character = "-----";
-            } else {
-                character = ocrResult.getLetter();
-            }
-            ocrTextView.setText("(" + singleSegmentX + "," + singleSegmentY + ")=" + character);
-        }
-        return ocrResult;
-    }
-
-    public OCRResult callTeseract(Mat processedTile) {
-        long tic;
-        try {
-            byte[] imageData = new byte[(int) (processedTile.cols() * processedTile.rows() *
-                    processedTile.channels())];
-
-            processedTile.get(0, 0, imageData);
-
-            tessBaseAPI.setImage(imageData, processedTile.cols(), processedTile.rows(), processedTile.channels(), processedTile.cols() * processedTile.channels());
-
-            tic = System.currentTimeMillis();
-            String textResult = tessBaseAPI.getUTF8Text();
-            final int confidence = tessBaseAPI.meanConfidence();
-            tessBaseAPI.clear();
-
-            if (confidence < 60) {
-                return new OCRResult("", 0);
-            }
-
-            return new OCRResult(textResult, confidence);
-        } catch (Exception x) {
-            Log.e(LOGTAG, "error", x);
-            return new OCRResult("", 0);
-        }
-    }
-
-    public Mat enhanceTileImage(Mat scrabbleTile, boolean debug) {
-        int pixelsToRemove = 3;
-        Mat cropped = scrabbleTile.submat(pixelsToRemove, scrabbleTile.rows() - pixelsToRemove, pixelsToRemove, scrabbleTile.cols() - pixelsToRemove);
-
-        final Scalar meanColor = Core.mean(cropped);
-
-        final Mat grayscale = new Mat();
-        Imgproc.cvtColor(cropped, grayscale, Imgproc.COLOR_RGB2GRAY);
-
-        final Scalar meanGrayscale = Core.mean(grayscale);
-        divTextView.setText((int) meanColor.val[0] + "," + (int) meanColor.val[1] + "," + (int) meanColor.val[2] + "\n" + (int) meanGrayscale.val[0]);
-
-        if (meanGrayscale.val[0] < 200.f) {
-            if (debug) {
-                putMatOnImageView(grayscale, segmentBitmap, segmentImageView);
-            }
-            return null;
-        }
-
-        final Mat threshold = new Mat();
-        Imgproc.threshold(grayscale, threshold, 200, 255, 0);
-        return threshold;
-    }
-
-    public void putMatOnImageView(Mat image, Bitmap bitmap, ImageView imageView) {
-        // convert to bitmap:
-        if (bitmap != null) {
-            bitmap.recycle();
-        }
-
-        bitmap = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(image, bitmap);
-        imageView.setImageBitmap(bitmap);
-
-
-    }
-
-    private void logElapsedTime(String msg, long tic) {
-        Log.d(LOGTAG, msg + " " + (System.currentTimeMillis() - tic) + " ms");
-    }
-
-    private void drawCornerCircles(Mat imageMat, Scalar red, Scalar green, Scalar blue, Scalar yellow, Scalar cyan, Point center, Point upperLeft, Point upperRight, Point lowerLeft, Point lowerRight) {
-        Core.circle(imageMat, center, 10, red, 5);
-        Core.circle(imageMat, upperLeft, 10, green, 5);
-        Core.circle(imageMat, upperRight, 10, blue, 5);
-        Core.circle(imageMat, lowerLeft, 10, yellow, 5);
-        Core.circle(imageMat, lowerRight, 10, cyan, 5);
-    }
-
-
-    private Mat drawBorder(Mat imageMat) {
-        Core.rectangle(imageMat, new Point(0, 0), new Point(imageMat.cols(), imageMat.rows()), new Scalar(255, 0, 0), 5);
-        return imageMat;
     }
 
 

@@ -1,4 +1,4 @@
-package ch.zuehlke.arscrabble;
+package ch.zuehlke.arscrabble.vision;
 
 import org.opencv.core.Mat;
 

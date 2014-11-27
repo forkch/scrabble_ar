@@ -13,12 +13,12 @@
 <h2 align=center>Version Notes for Leptonica</h2>
 
 <hr>
-<h2 align=center>  <IMG SRC="moller52.jpg" border=1 ALIGN_MIDDLE> </h2>
+<h2 align=center><IMG SRC="moller52.jpg" border=1 ALIGN_MIDDLE></h2>
 <hr>
 
 <p>
-Note: The following are highlights of the changes in each version.
-They are <i>not</i> a complete listing of the modifications.
+    Note: The following are highlights of the changes in each version.
+    They are <i>not</i> a complete listing of the modifications.
 
 <pre>
 
@@ -94,7 +94,7 @@ They are <i>not</i> a complete listing of the modifications.
        Fixed bug in pdf generation for large files, using a new
         double array (dnabasic.c).  Added several new modes for pdf
         generation from sets of images.
-       Dewarp based on image content now aligns to left and right margins;
+       Dewarp based on tileImage content now aligns to left and right margins;
         works at book level; is more robust to bad disparity models;
         version 2 serialization.
        Fixed regutils to return the actual number of errors.
@@ -115,7 +115,7 @@ They are <i>not</i> a complete listing of the modifications.
        Proper version numbers are now set with automake.
        New utility (quadtree.c) for generating quadtree statistics.
        New utility (in colorspace.c) for conversions to and from YUV.
-       Refactored functions for assembling image data for generating
+       Refactored functions for assembling tileImage data for generating
        either PS or PDF images using g4, jpeg or flate encoding.
        Better tempfile names, using current time in microseconds.
        Functions for getting resolution from jpeg and png files.
@@ -127,7 +127,7 @@ They are <i>not</i> a complete listing of the modifications.
        used for generating PDF files.
        New utility (pdfio.c) for generating PDF files.
        Refactored regutils functions to make them simpler to use.
-       Top-level deskew now works on any image.
+       Top-level deskew now works on any tileImage.
        Added functions in utils.c for cross-platform development, mostly
        for functions that make and remove directories, copy, move
        and delete files, etc.  It should now be straightforward to write
@@ -197,7 +197,7 @@ They are <i>not</i> a complete listing of the modifications.
        Various functions for linearly mapping colors and displaying arrays
          of colors (pix4.c, blend.c, prog/rankhisto_reg.c)
        Functions for getting approximate ranges of colors and color
-         components in an image (pix4.c, colormap.c)
+         components in an tileImage (pix4.c, colormap.c)
        Cleaned up windows platform and compiler defines and macros.
 
 1.65   5 Apr 10
@@ -248,15 +248,15 @@ They are <i>not</i> a complete listing of the modifications.
          operation (morphapp.c).
        Improve the default sharpening for scaling (scale.c)
        Function to test for equivalence of file data (utils.c)
-       Select and read image files with embedded index (readfile.c)
+       Select and read tileImage files with embedded index (readfile.c)
        Fix box size calculation in pixEmbedForRotation(); solution
          provided by Brent Sundheimer.
        New pixDisplayMultiple(), instead of calling gthumb directly; this
          is now set up to use i_view for windows.
-       Changed criteria for determining if an image is color (colorcontent.c,
+       Changed criteria for determining if an tileImage is color (colorcontent.c,
          colorquant{1,2}.c.
        Optional mode where the filename extension is automatically written
-         to output image files; particularly useful for windows.
+         to output tileImage files; particularly useful for windows.
        Initialize boxa and pixa as full, with minimal placeholders.
        Get rank valued numbers and boxes in numa and boxa.
        Cute implementation for finding largest solid rectangle (maze.c)
@@ -327,7 +327,7 @@ They are <i>not</i> a complete listing of the modifications.
        Improve support for 16 bpp grayscale.
        For scaleToGray* functions, reduce the width truncation.
        In psio.c, new functions for converting segmented page images
-       (text and image) into level 2 PostScript.
+       (text and tileImage) into level 2 PostScript.
        Removed all implicit casting to const char*.
        New custom pix memory allocator, designed for large pix whose
        memory needs to be reused many times.
@@ -355,7 +355,7 @@ They are <i>not</i> a complete listing of the modifications.
        Generalized pixRotate() to handle colormapped images, and to use
          pixRotateBySampling() in place of the removed pixRotateEuclidean().
        New skew finder for full angle range, pixFindSkewOrthogonalRange().
-       For skew detection, now allow shear about image center as well as
+       For skew detection, now allow shear about tileImage center as well as
          about the UL corner.
        New rotation reg tests: rotate1_reg.c and rotate2_reg.c.
        Better serialization format for boxaa; introduce new version numbers
@@ -400,7 +400,7 @@ They are <i>not</i> a complete listing of the modifications.
 
 1.60   19 Jan 09
        Fixed bug in pixBlockconv(), introduced in 1.59, that causes
-       overflow when convolving with an image that has white (255)
+       overflow when convolving with an tileImage that has white (255)
        at the edges.  [quickly found by Dave Bryan]
        Include function to display freetype fonts in a pix.
        The files freetype.c and freetype.h are in the distribution, but are not
@@ -415,7 +415,7 @@ They are <i>not</i> a complete listing of the modifications.
           Split: boxfunc.c --> (boxfunc1.c, boxfunc2.c, boxfunc3.c)
        Improved connected component filtering, with logical functions
        applied to indicator arrays (pix4.c, pixafunc.c, numafunc1.c).
-       Function to determine if an image can be quantized nicely with
+       Function to determine if an tileImage can be quantized nicely with
        only a few colors (colorcontent.c, pixconv.c).
        New gray seed-filling functions (seedfill.c, seedfilllow.c).
        Fixed bugs in tophats and hdome, due to misuse of pixSubtractGray()
@@ -430,13 +430,13 @@ They are <i>not</i> a complete listing of the modifications.
        (with help from Tony Dovgal).
        New generic ptr array utility: all O(1) functions of a stack plus
        random replace, insert and delete (ptra.c).
-       Simple functions for colorizing a grayscale image with an arbitrary
+       Simple functions for colorizing a grayscale tileImage with an arbitrary
        color (pixconv.c, colormap.c)
        Flexible affine transforms (translation, scale, rotation) on pta
        and boxa (affinecompose.c).
        Clipping of foreground (both exact and approximate) starting from
-       within a rectangular region of the image (pix4.c)
-       Blending a colored rectangle over an image (pix2.c, boxfunc3.c)
+       within a rectangular region of the tileImage (pix4.c)
+       Blending a colored rectangle over an tileImage (pix2.c, boxfunc3.c)
        Generation of rectangle covering of mask components (boxfunc3.c).
        Block convolution using tiles (for very large images)  (convolve.c)
        New or improved regression tests in prog:
@@ -507,13 +507,13 @@ They are <i>not</i> a complete listing of the modifications.
        to work with both autoconf (HAVE_CONFIG_H) and the old
        customized makefile.  Customization is now all in environ.h.
        pixSaveTiled(): a new way to display tiled images.
-       pixtiling.c: interface for splitting an image into a set of
+       pixtiling.c: interface for splitting an tileImage into a set of
        overlapping tiles, using mirrored borders for tiles touching the
-       image boundary.
+       tileImage boundary.
        pixBlendHardLight(): new blending mode with nice visual effects.
-       pixColorFraction(): determines extent of color in image
+       pixColorFraction(): determines extent of color in tileImage
        Both octree and median-cut color quantization check first if
-       image is essentially grayscale; improvements to both algorithms.
+       tileImage is essentially grayscale; improvements to both algorithms.
        box*TransformOrdered(): general sequence of linear transforms.
        colorquant_reg.c, xformbox_reg.c, hardlight_reg.c: new regr tests.
 
@@ -537,7 +537,7 @@ They are <i>not</i> a complete listing of the modifications.
        signal processing to locate barcodes on a page, deskew them, and
        find the bar widths, along with decoders for two formats.
        (readbarcode.*, prog/barcodetest.c)
-       Made the default to stub out read/write for non-tiff image formats
+       Made the default to stub out read/write for non-tiff tileImage formats
        to memory; it doesn't work on Macs & they were complaining (*io.c)
        Include MSVC project files for building leptonlib under
        windows (leptonlib.*)
@@ -550,11 +550,11 @@ They are <i>not</i> a complete listing of the modifications.
        Read/write of tiff to memory (instead of a file, using
        the TIFFClientOpen() callback interface), contributed by Adam
        Langley (tiffio.c, testing in prog/ioformats_reg).
-       Improved image statistics functions, both over tiles and
-       through a mask over the entire image.  Added standard deviation
+       Improved tileImage statistics functions, both over tiles and
+       through a mask over the entire tileImage.  Added standard deviation
        and variance; enable statistics for rgb and colormapped images,
        in addition to 8 bpp grayscale (pix3.c).  New function to
-       extract rgb components from a colormapped image (pix2.c).
+       extract rgb components from a colormapped tileImage (pix2.c).
        Fix pixWriteStringPS() to work with all depths and colormap (psio.c)
        Enable all non-tiff formats to also write and read to/from memory (*io.c)
        Added support for read/write to gif, contributed by Tony Dovgal
@@ -608,11 +608,11 @@ They are <i>not</i> a complete listing of the modifications.
        when compiling for big- or little-endians (endiantest.c)
        Compute a color magnitude for each rgb pixel (colorcontent.c).
        Allow separate modification of hue and saturation (enhance.c).
-       Global transform of color image for arbitrary white point (adaptmap.c).
+       Global transform of color tileImage for arbitrary white point (adaptmap.c).
    
 1.50   07 Oct 07
        |||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-       NOTE CAREFULLY: The  image format enum in imageio.h has
+       NOTE CAREFULLY: The  tileImage format enum in imageio.h has
        changed.  This is an ABI change, and it requires
        recompilation of the library.
        |||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -644,7 +644,7 @@ They are <i>not</i> a complete listing of the modifications.
 
 1.49   23 Sep 07
        |||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-       NOTE CAREFULLY: The  image format enum in imageio.h has
+       NOTE CAREFULLY: The  tileImage format enum in imageio.h has
        changed.  This is an ABI change, and it requires
        recompilation of the library.
        |||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -684,7 +684,7 @@ They are <i>not</i> a complete listing of the modifications.
        grayscale tiff (tiffio.c, pix2.c).
        New function for finding the number of c.c., which is a bit
          faster than finding the b.b. or the component images (conncomp.c)
-       New functions for finding local extrema in grayscale image (seedfill.c)
+       New functions for finding local extrema in grayscale tileImage (seedfill.c)
 
 1.46   28 Jun 07
        Added interpreted mode for color morphology (morphseq.c).
@@ -723,14 +723,14 @@ They are <i>not</i> a complete listing of the modifications.
        Morphology on color images (gray ops on each component) (colormorph.c)
        New methods for generating sels; we now have five methods in
        sel1.c and 3 others in selgen.c.  Also a function that
-       displays Sels as an image, for use in documentation (sel1.c)
+       displays Sels as an tileImage, for use in documentation (sel1.c)
        New high-level converters, such as pixConvertTo8(), pixConvertTo32(),
         pixConvertLossless()   (pixconv.c)
        Identify regression tests, and rename them as prog/*_reg.c.
        Complete revision of plotting package (gplot.c)
        New functions for comparing pix (compare.c)
        New morph application functions, such as the ability to run a
-       morph sequence separately on selected c.c. in an image, and
+       morph sequence separately on selected c.c. in an tileImage, and
        a fast, quasi-tophat function (morphapp.c)
        Cleanup and new interfaces to border representations of c.c. (ccbord.c)
        Page segmentation application (pageseg.c)
@@ -767,7 +767,7 @@ They are <i>not</i> a complete listing of the modifications.
 1.40   15 Oct 06
        Fixed xtractprotos for cygwin.  Minor fixes and improved documentation
        (baseline.c, conncomp.c, pix2.c, morphseq.c, pts.c, numarray.c,
-       utils.c, skew.c).  Add ability to quantize an rgb image to a
+       utils.c, skew.c).  Add ability to quantize an rgb tileImage to a
        specified colormap (colorquant.c); tested in prog/cmapquanttest.c.
        Modifications to allow conditional compilation on MS VC++,
        and to allow I/O calls to be stubbed out (new files: *iostub.c,
@@ -778,7 +778,7 @@ They are <i>not</i> a complete listing of the modifications.
        NOTE CAREFULLY:  There has been an interface change to make
        affine, bilinear and projective transforms more general.
        The implementation has been changed to allow them to handle
-       all image types and to make them faster (esp. with both sampled
+       all tileImage types and to make them faster (esp. with both sampled
        and interpolated mapping on color images).
        |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
        Added prog/Makefile.mingw to build executables.  This is still
@@ -855,7 +855,7 @@ They are <i>not</i> a complete listing of the modifications.
        space conversion between rgb and hsv.  Re-bundle thresholding
        code from (binarize*.c, dibitize*.c) to grayquant*.c.
        pixThreshold8() now also quantizes 8 bpp --> 8 bpp.
-       High-level pixRotate() that optionally expands image sufficiently
+       High-level pixRotate() that optionally expands tileImage sufficiently
        so that no pixels are lost in any sequence of rotations (rotate.c).
        Generalize shear to specify color of pixels brought in, including
        for in-place operation (shear.c, rotateshear.c).  Faster version of
@@ -883,7 +883,7 @@ They are <i>not</i> a complete listing of the modifications.
        As a result, there is no output to stderr if NO_CONSOLE_IO is defined. 
        Adaptive mapping to make bg uniform (adaptmap.c).  A few bug fixes.
        New PostScript output functions for embedding PS files
-       (prog/converttops).  Generalized some image enhancement functions.
+       (prog/converttops).  Generalized some tileImage enhancement functions.
        New functions for generating hit-miss sels.
 
 1.29   12 Nov 05
@@ -904,7 +904,7 @@ They are <i>not</i> a complete listing of the modifications.
        whose code is broken by these changes -- I hope it's worth it.
        Removed colormap.h; simplified all colormap usage, hiding details
        from all but a few colormap functions.  Am now saving file format
-       in the pix when an image is read, and can by default write
+       in the pix when an tileImage is read, and can by default write
        out in this format.  Resolution info added for jpeg and png.
        Added L_INFO* macros and l_info* fctns for printing
        (e.g., debugging) info.  Suggestions and code kindly
@@ -928,7 +928,7 @@ They are <i>not</i> a complete listing of the modifications.
        Added functions to read header parameters for png and tiff.
 
 1.24   5 Jun 05
-       Added image splitting to allow printing in tiles (as several pages).
+       Added tileImage splitting to allow printing in tiles (as several pages).
        Added new octree quantization function to generate 4 and 8 bpp
        colormapped output (not dithered).  Fixed bmp resolution.
        Added new flag for colormap removal (using dest depth based on
@@ -945,7 +945,7 @@ They are <i>not</i> a complete listing of the modifications.
        the shortest path between two points in the maze.  Add heap
        of pointers (keyed on the first field), which is used to
        implement a priority queue.  This is applied to search for
-       a "least cost" path on a grayscale image (a generalization
+       a "least cost" path on a grayscale tileImage (a generalization
        of a binary maze).
 
 1.21   28 Feb 05
@@ -979,7 +979,7 @@ They are <i>not</i> a complete listing of the modifications.
        Unpacking from binary to 8, 16 and 32 bpp.  Thresholding
        and dithering from 8 bpp to 2 bpp ("dibitization").  New bitmap
        font facility, using a single rendered font in a variety of
-       sizes: allows painting the text on an image (binary, gray, RGB).
+       sizes: allows painting the text on an tileImage (binary, gray, RGB).
        (People have asked for the ability to write text on images).
 
 1.18   25 Aug 04
@@ -999,7 +999,7 @@ They are <i>not</i> a complete listing of the modifications.
 
 1.16   31 Mar 04
        New depth conversion functions, improved conversion to false color,
-       new contour rendering (onto 1 bpp or onto the src grayscale image),
+       new contour rendering (onto 1 bpp or onto the src grayscale tileImage),
        new orthogonal rotations, better interface for doing arithmetic
        on 2-d arrays using a pix, improved distance function.
 
@@ -1028,9 +1028,9 @@ They are <i>not</i> a complete listing of the modifications.
        most recent libpng (1.2.5).
 
 1.12   30 Jun 03
-       Implemented border chain representation from a binary image,
+       Implemented border chain representation from a binary tileImage,
        writes/reads a compressed version, and renders the original
-       image back from the borders.   Also writes outline file out
+       tileImage back from the borders.   Also writes outline file out
        in svg format.  Number arrays (numa) and point arrays (pta)
        are also extended to 2nd level arrays (numaa, ptaa).
        Serialized I/O for boxa, pta, and pixa.
@@ -1040,7 +1040,7 @@ They are <i>not</i> a complete listing of the modifications.
        list cons cells and arbitrary objects.
 
 1.10   14 Apr 03
-       Implemented simple image enhancements in gray and color:
+       Implemented simple tileImage enhancements in gray and color:
        gamma correction, contrast enhancement, unsharp masking.
        Extended smoothing via block convolution to color.
        Implemented auto-gen'd DWA version of hit-miss transform;
@@ -1051,7 +1051,7 @@ They are <i>not</i> a complete listing of the modifications.
        Implemented a safe, expandable byte queue.  As an example of
        its use, implemented memory-to-memory compression and decompression
        using zlib.  Generalized PS write to include RGB color.
-       Implemented a method to find image skew.
+       Implemented a method to find tileImage skew.
 
 1.8    31 Jan 03
        Implemented a simple 1-pass color quantization with dithering,
@@ -1071,7 +1071,7 @@ They are <i>not</i> a complete listing of the modifications.
        Generalized shear and shear rotation to arbitrary locations
        about which the operation is performed.  Implemented in-place
        translation using pixRasteropIP().  Implemented arbitrary
-       affine transform of image two ways: pointwise and sequential.
+       affine transform of tileImage two ways: pointwise and sequential.
        Added binarization by error diffusion.  Added simple color
        quantization by octree.
 
@@ -1090,8 +1090,8 @@ They are <i>not</i> a complete listing of the modifications.
        Added new functions with arrays of images for use in applications
        such as jbig2 encoders, along with a simple jbig2 implementation
        using either hausdorff or correlation scoring.  Added centroid
-       finder for images.  For accessing image arrays from arrays of
-       image arrays, added a "new reference" (NEW_REF) flag, with a
+       finder for images.  For accessing tileImage arrays from arrays of
+       tileImage arrays, added a "new reference" (NEW_REF) flag, with a
        ref count attached to the array.  Added power-of-2 binary
        expansion and reduction.
 

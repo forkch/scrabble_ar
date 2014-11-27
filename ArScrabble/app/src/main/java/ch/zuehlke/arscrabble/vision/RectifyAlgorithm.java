@@ -1,4 +1,4 @@
-package ch.zuehlke.arscrabble;
+package ch.zuehlke.arscrabble.vision;
 
 import android.util.Log;
 
@@ -10,57 +10,13 @@ import org.opencv.core.Rect;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
+import ch.zuehlke.arscrabble.VectorUtils;
+
 /**
  * Removes the perspective distortion from an input image.
  */
 public class RectifyAlgorithm {
     private static final String TAG = RectifyAlgorithm.class.getSimpleName();
-
-    /**
-     * @param inputMat      The original image
-     * @param corners       The corners that delimit our region of interest
-     * @param rotationAngle rotation angle of the image in degree (0-360)
-     * @return
-     */
-    public static Mat rectify(Mat inputMat, Point[] corners, int rotationAngle) {
-
-
-        Mat output = new Mat();
-
-        if (corners.length != 4) {
-            // Error
-            return new Mat();
-        }
-        for (Point corner : corners) {
-            if (corner.x < 0 || corner.y < 0) {
-                return inputMat;
-            }
-        }
-
-        Point[] sortedPoints = sortPoints(corners);
-
-        MatOfPoint2f srcPoints = reconstuctPointInOriginalImage(sortedPoints, inputMat.size(), rotationAngle);
-
-        double widthHeightRatio = reconstructWithHeightRatio(sortedPoints, inputMat.size());
-        MatOfPoint2f destPoints = calculateDestMatrix(new MatOfPoint2f(sortedPoints), widthHeightRatio);
-
-        Mat transformMatrix = Imgproc.getPerspectiveTransform(srcPoints, destPoints);
-
-        Size outputSizeRotatione = rotationAngle == 0
-                || rotationAngle == 180 || rotationAngle == -180
-                ? inputMat.size() : new Size(inputMat.height(), inputMat.width());
-
-        // Calculate size of output
-        Size outputSize = calculateOutputSize(destPoints, outputSizeRotatione);
-
-        Imgproc.warpPerspective(inputMat, output, transformMatrix, outputSize);
-
-        // Crop region
-        Rect rect = new Rect(destPoints.toArray()[0], destPoints.toArray()[3]);
-
-        output = output.submat(rect);
-        return output;
-    }
 
     /**
      * @param inputMat The original image
@@ -70,13 +26,13 @@ public class RectifyAlgorithm {
     public static Mat rectifyToInputMat(Mat inputMat, Point[] corners) {
 
         Mat output = new Mat();
-        if (!VectorUtils.allCornersVisible(corners)) {
+        if (!VectorUtils.allCornersVisible(corners, inputMat)) {
             return inputMat;
         }
 
-
         Point[] sortedPoints = sortPoints(corners);
 
+        // perform rectification only within boundingbox of corner points
         Rect boundingBox = Imgproc.boundingRect(new MatOfPoint(sortedPoints));
         inputMat = inputMat.submat(boundingBox);
 
