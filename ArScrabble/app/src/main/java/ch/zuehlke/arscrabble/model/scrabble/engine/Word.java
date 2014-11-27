@@ -1,4 +1,4 @@
-package ch.zuehlke.arscrabble.model;
+package ch.zuehlke.arscrabble.model.scrabble.engine;
 
 import java.util.ArrayList;
 import java.util.List;

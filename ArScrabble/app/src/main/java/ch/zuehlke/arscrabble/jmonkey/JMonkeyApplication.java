@@ -40,10 +40,9 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
 
-import ch.zuehlke.arscrabble.model.Board;
+import ch.zuehlke.arscrabble.model.scrabble.engine.Board;
 import ch.zuehlke.arscrabble.vision.ScrabbleBoardMetrics;
 import ch.zuehlke.arscrabble.vuforiautils.SampleMath;
 

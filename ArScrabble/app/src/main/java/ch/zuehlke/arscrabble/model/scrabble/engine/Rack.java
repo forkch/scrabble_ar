@@ -1,4 +1,4 @@
-package ch.zuehlke.arscrabble.model;
+package ch.zuehlke.arscrabble.model.scrabble.engine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,5 +26,9 @@ public class Rack {
 
     public int getNumberOfMissingStones() {
         return MAX_NUMBER_OF_STONES - stones.size();
+    }
+
+    public List<Stone> getStones() {
+        return stones;
     }
 }
