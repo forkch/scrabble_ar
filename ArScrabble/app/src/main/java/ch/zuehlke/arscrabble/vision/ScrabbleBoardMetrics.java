@@ -84,16 +84,16 @@ public class ScrabbleBoardMetrics {
 
     public float getX(int verticalIdx) {
         final float x = this.getMarginLeft() + verticalIdx * this.getCellWidth() + verticalIdx * ScrabbleBoardMetrics.WIDTH_CORRECTION;
-        if (x < 0 || x > cols)
-            throw new IllegalStateException("x out of bounds: " + x);
+//        if (x < 0 || x > cols)
+//            throw new IllegalStateException("x out of bounds: " + x);
         return x;
     }
 
     public float getY(int horizontalIdx) {
         final float y = this.getMarginTop() + horizontalIdx * this.getCellHeight() + horizontalIdx * ScrabbleBoardMetrics.HEIGHT_CORRECTION;
 
-        if (y < 0 || y > rows)
-            throw new IllegalStateException("y out of bounds: " + y);
+//        if (y < 0 || y > rows)
+//            throw new IllegalStateException("y out of bounds: " + y);
         return y;
     }
 

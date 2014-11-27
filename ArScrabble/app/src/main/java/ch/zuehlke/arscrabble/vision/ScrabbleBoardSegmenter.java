@@ -53,11 +53,12 @@ public class ScrabbleBoardSegmenter {
 
     public Mat getScrabbleTile(Mat image, int horizontalIdx, int verticalIdx) {
 
-        int x1 = (int) metrics.getX(horizontalIdx);
-        int y1 = (int) metrics.getY(verticalIdx);
+        int additionalPixels = 5;
+        int x1 = (int) metrics.getX(horizontalIdx) - additionalPixels;
+        int y1 = (int) metrics.getY(verticalIdx) - additionalPixels;
 
-        int x2 = (int) metrics.getX(horizontalIdx + 1);
-        int y2 = (int) metrics.getY(verticalIdx + 1);
+        int x2 = (int) metrics.getX(horizontalIdx + 1) + additionalPixels;
+        int y2 = (int) metrics.getY(verticalIdx + 1) + additionalPixels;
 
         final Mat scrabbleTile = new Mat();
 

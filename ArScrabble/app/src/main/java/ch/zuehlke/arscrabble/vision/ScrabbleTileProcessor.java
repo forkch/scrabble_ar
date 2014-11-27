@@ -6,30 +6,29 @@ import com.googlecode.tesseract.android.TessBaseAPI;
 
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 import ch.zuehlke.arscrabble.EnhancedTileImage;
 
 import static org.opencv.core.Core.addWeighted;
+import static org.opencv.core.Core.circle;
 import static org.opencv.core.Core.mean;
 import static org.opencv.core.Core.rectangle;
 import static org.opencv.imgproc.Imgproc.CHAIN_APPROX_SIMPLE;
 import static org.opencv.imgproc.Imgproc.COLOR_RGB2GRAY;
 import static org.opencv.imgproc.Imgproc.GaussianBlur;
-import static org.opencv.imgproc.Imgproc.RETR_EXTERNAL;
+import static org.opencv.imgproc.Imgproc.RETR_LIST;
 import static org.opencv.imgproc.Imgproc.THRESH_BINARY_INV;
 import static org.opencv.imgproc.Imgproc.boundingRect;
 import static org.opencv.imgproc.Imgproc.contourArea;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 import static org.opencv.imgproc.Imgproc.dilate;
-import static org.opencv.imgproc.Imgproc.drawContours;
 import static org.opencv.imgproc.Imgproc.findContours;
 import static org.opencv.imgproc.Imgproc.threshold;
 
@@ -40,6 +39,9 @@ public class ScrabbleTileProcessor {
     private static final String LOGTAG = ScrabbleTileProcessor.class.getSimpleName();
     private static final String LOGTAG_OCR = LOGTAG + "(OCR)";
     private static final int MINIMAL_OCR_CONFIDENCE = 70;
+    public static final int MAX_CENTROID_DISTANCE = 10;
+    public static final int MAX_CONTOUR_AREA = 500;
+    public static final int MIN_CONTOUR_AREA = 50;
 
     private final TessBaseAPI tessBaseAPI;
     private BoardDetection.BoardDetectionDebugCallback boardDetectionDebugCallback;
@@ -49,57 +51,69 @@ public class ScrabbleTileProcessor {
         this.boardDetectionDebugCallback = boardDetectionDebugCallback;
     }
 
-    public void scanScrabbleboard(Mat image, ScrabbleBoardSegmenter scrabbleBoardSegmenter) {
+    public char[][] scanScrabbleboard(Mat image, ScrabbleBoardSegmenter scrabbleBoardSegmenter) {
         long tic = System.currentTimeMillis();
         String allLetters = "";
-        for (int verticalIdx = 0; verticalIdx < 16; verticalIdx++) {
-            for (int horizontalIdx = 0; horizontalIdx < 16; horizontalIdx++) {
+        char[][] lettersOnBoard = new char[15][15];
+        for (int verticalIdx = 0; verticalIdx < 15; verticalIdx++) {
+            for (int horizontalIdx = 0; horizontalIdx < 15; horizontalIdx++) {
                 final Mat scrabbleTile = scrabbleBoardSegmenter.getScrabbleTile(image, horizontalIdx, verticalIdx);
-
-                EnhancedTileImage processedTile = enhanceTileImage(scrabbleTile, false);
+                lettersOnBoard[verticalIdx][horizontalIdx] = 0;
+                EnhancedTileImage processedTile = enhanceTileImage(scrabbleTile);
                 if (!processedTile.isScrabbleTileProbable()) {
                     continue;
                 }
 
                 final CroppedTileAndBoundingBox croppedTileAndBoundingBox = cropTileImageByContourOfLargestBlob(processedTile.getTileImage());
-
-                OCRResult ocrResult = performOCR(croppedTileAndBoundingBox.getCroppedTile());
-                if (ocrResult.hasLetterBeenDetected()) {
-                    Log.i(LOGTAG_OCR, "tile at (" + horizontalIdx + "," + verticalIdx + "): " + ocrResult);
-                    allLetters += ocrResult.getLetter();
+                if (croppedTileAndBoundingBox.foundGoodCandidates()) {
+                    OCRResult ocrResult = performOCR(croppedTileAndBoundingBox.getCroppedTile());
+                    if (ocrResult.hasLetterBeenDetected()) {
+                        Log.i(LOGTAG_OCR, "tile at (" + horizontalIdx + "," + verticalIdx + "): " + ocrResult);
+                        allLetters += ocrResult.getLetter();
+                        lettersOnBoard[verticalIdx][horizontalIdx] = ocrResult.getLetter().charAt(0);
+                    }
                 }
             }
         }
         boardDetectionDebugCallback.setDivTextView(allLetters);
-        Log.d(LOGTAG_OCR, "scanScrabbleBoard in " + (System.currentTimeMillis() - tic) + "ms");
-
+        Log.d(LOGTAG_OCR, "scanned ScrabbleBoard in " + (System.currentTimeMillis() - tic) + "ms");
+        return lettersOnBoard;
     }
 
 
     public void oneTileDebug(Mat imageMat, ScrabbleBoardSegmenter scrabbleBoardSegmenter, int x, int y) {
         boardDetectionDebugCallback.setOCRTextView("");
         boardDetectionDebugCallback.setDivTextView("");
+
+        boardDetectionDebugCallback.putMatOnSegment1ImageView(null);
+        boardDetectionDebugCallback.putMatOnSegment2ImageView(null);
+
         Mat scrabbleTile = scrabbleBoardSegmenter.getScrabbleTile(imageMat, x, y);
-        final EnhancedTileImage tileImage = enhanceTileImage(scrabbleTile, false);
+        final EnhancedTileImage tileImage = enhanceTileImage(scrabbleTile);
         if (tileImage.isScrabbleTileProbable()) {
             final Mat thresholdedTileImage = tileImage.getTileImage();
 
             final CroppedTileAndBoundingBox croppedTileAndBoundingBox = cropTileImageByContourOfLargestBlob(thresholdedTileImage);
-            final Rect boundingBoxInInputImage = croppedTileAndBoundingBox.getBoundingBoxInInputImage();
+            final Rect bestBoundingBoxCandidate = croppedTileAndBoundingBox.getBoundingBoxInInputImage();
 
-            drawContours(scrabbleTile, Arrays.asList(croppedTileAndBoundingBox.getMaxContour()), -1, new Scalar(0, 255, 0));
-            rectangle(scrabbleTile, boundingBoxInInputImage.tl(), boundingBoxInInputImage.br(), new Scalar(255, 0, 0));
+            if (croppedTileAndBoundingBox.foundGoodCandidates()) {
+                for (Rect r : croppedTileAndBoundingBox.getBoundingBoxes()) {
+                    rectangle(scrabbleTile, r.tl(), r.br(), new Scalar(255, 0, 0));
+                    circle(scrabbleTile, new Point(r.x + r.width / 2, r.y + r.height / 2), 1, new Scalar(255, 0, 0));
+                }
+                rectangle(scrabbleTile, bestBoundingBoxCandidate.tl(), bestBoundingBoxCandidate.br(), new Scalar(0, 255, 0));
+                circle(scrabbleTile, new Point(scrabbleTile.cols() / 2, scrabbleTile.rows() / 2), 1, new Scalar(0, 0, 255));
 
-            boardDetectionDebugCallback.putMatOnSegment2ImageView(croppedTileAndBoundingBox.getCroppedTile());
+                boardDetectionDebugCallback.putMatOnSegment2ImageView(croppedTileAndBoundingBox.getCroppedTile());
 
-            performOCRDebug(croppedTileAndBoundingBox.getCroppedTile(), x, y);
+                performOCRDebug(croppedTileAndBoundingBox.getCroppedTile(), x, y);
+            }
         } else {
             boardDetectionDebugCallback.putMatOnSegment2ImageView(imageMat);
         }
         boardDetectionDebugCallback.putMatOnSegment1ImageView(scrabbleTile);
 
     }
-
 
     private CroppedTileAndBoundingBox cropTileImageByContourOfLargestBlob(Mat inputImage) {
 
@@ -110,35 +124,51 @@ public class ScrabbleTileProcessor {
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
 
         Mat mHierarchy = new Mat();
-        findContours(dilatedInput, contours, mHierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+        findContours(dilatedInput, contours, mHierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
         if (contours.isEmpty()) {
-            return new CroppedTileAndBoundingBox(inputImage, new Rect(0, 0, inputImage.cols(), inputImage.rows()), new MatOfPoint());
+            return new CroppedTileAndBoundingBox(inputImage, new Rect(0, 0, inputImage.cols(), inputImage.rows()), new MatOfPoint(), new ArrayList<Rect>());
         }
+        Point centerOfImage = new Point(inputImage.cols() / 2, inputImage.rows() / 2);
+        List<Rect> boundingRects = new ArrayList<Rect>();
         // Find max contour area
         double maxArea = 0;
-        Iterator<MatOfPoint> each = contours.iterator();
-        MatOfPoint maxContour = null;
-        while (each.hasNext()) {
-            MatOfPoint wrapper = each.next();
-            double area = contourArea(wrapper);
-            if (area > maxArea) {
-                maxArea = area;
-                maxContour = wrapper;
+        MatOfPoint bestContour = null;
+        double currentMinDistance = MAX_CENTROID_DISTANCE;
+        for (MatOfPoint contour : contours) {
+
+            double area = contourArea(contour);
+            maxArea = area;
+
+            final Rect boundingBox = boundingRect(contour);
+            //Log.i(LOGTAG, "" + boundingBox.area());
+            if (boundingBox.area() > MAX_CONTOUR_AREA || boundingBox.area() < MIN_CONTOUR_AREA) {
+                continue;
+            }
+            boundingRects.add(boundingBox);
+
+            Point centerOfBoundingBox = new Point((boundingBox.x + boundingBox.width / 2), (boundingBox.y + boundingBox.height / 2));
+
+            double dist_x_pow = Math.pow(Math.abs(centerOfBoundingBox.x - centerOfImage.x), 2);
+            double dist_y_pow = Math.pow(Math.abs(centerOfBoundingBox.y - centerOfImage.y), 2);
+            double distance = Math.sqrt(dist_x_pow + dist_y_pow);
+
+            if (distance < currentMinDistance) {
+                currentMinDistance = distance;
+                bestContour = contour;
             }
         }
 
-        if (maxContour == null) {
-            return new CroppedTileAndBoundingBox(inputImage, new Rect(0, 0, inputImage.cols(), inputImage.rows()), new MatOfPoint());
+        if (bestContour == null) {
+            return new CroppedTileAndBoundingBox(inputImage, new Rect(0, 0, inputImage.cols(), inputImage.rows()), new MatOfPoint(), new ArrayList<Rect>());
         }
 
+        final Rect boundingBoxInInputImage = boundingRect(bestContour);
 
-        final Rect boundingBoxInInputImage = boundingRect(maxContour);
-
-        return new CroppedTileAndBoundingBox(inputImage.submat(boundingBoxInInputImage), boundingBoxInInputImage, maxContour);
+        return new CroppedTileAndBoundingBox(inputImage.submat(boundingBoxInInputImage), boundingBoxInInputImage, bestContour, boundingRects);
     }
 
-    private EnhancedTileImage enhanceTileImage(Mat scrabbleTile, boolean debug) {
+    private EnhancedTileImage enhanceTileImage(Mat scrabbleTile) {
 
         final Mat grayscale = new Mat();
         cvtColor(scrabbleTile, grayscale, COLOR_RGB2GRAY);
@@ -150,9 +180,9 @@ public class ScrabbleTileProcessor {
 
         final Scalar meanGrayscale = mean(sharpened);
 
-        if (meanGrayscale.val[0] < 200.f) {
-            return EnhancedTileImage.createNoTilePresent();
-        }
+//        if (meanGrayscale.val[0] < 180) {
+//            return EnhancedTileImage.createNoTilePresent();
+//        }
 
         final Mat threshold = new Mat();
         threshold(sharpened, threshold, 180, 255, THRESH_BINARY_INV);
@@ -184,10 +214,11 @@ public class ScrabbleTileProcessor {
             tessBaseAPI.setImage(imageData, processedTile.cols(), processedTile.rows(), processedTile.channels(), processedTile.cols() * processedTile.channels());
 
             String textResult = tessBaseAPI.getUTF8Text();
+
             final int confidence = tessBaseAPI.meanConfidence();
             tessBaseAPI.clear();
 
-            if (confidence < MINIMAL_OCR_CONFIDENCE) {
+            if (textResult.length() == 0 || confidence < MINIMAL_OCR_CONFIDENCE) {
                 return OCRResult.createNoLetterFound();
             }
 
