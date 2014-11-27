@@ -22,13 +22,17 @@ public class ScrabbleBoardMetrics {
     private int cellWidth = 42;
     private int cellHeight = 42;
 
-    private ScrabbleBoardMetrics(Mat image) {
-        marginLeft = (int) (image.cols() * marginLeftPercent);
-        marginRight = (int) (image.cols() * marginRightPercent);
-        marginTop = (int) (image.rows() * marginTopPercent);
-        marginBottom = (int) (image.rows() * marginBottomPercent);
-        cellWidth = (int) (image.rows() * cellHeightPercent);
-        cellHeight = (int) (image.rows() * cellHeightPercent);
+    public ScrabbleBoardMetrics(Mat image) {
+        this(image.cols(), image.rows());
+    }
+
+    public ScrabbleBoardMetrics(float cols, float rows) {
+        marginLeft = (int) (cols * marginLeftPercent);
+        marginRight = (int) (cols * marginRightPercent);
+        marginTop = (int) (rows * marginTopPercent);
+        marginBottom = (int) (rows * marginBottomPercent);
+        cellWidth = (int) (rows * cellHeightPercent);
+        cellHeight = (int) (rows * cellHeightPercent);
     }
 
     public static ScrabbleBoardMetrics metricsFromImage(Mat image) {

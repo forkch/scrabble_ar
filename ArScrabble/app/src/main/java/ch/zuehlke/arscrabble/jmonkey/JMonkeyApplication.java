@@ -3,7 +3,6 @@ package ch.zuehlke.arscrabble.jmonkey;
 import android.util.Log;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
@@ -15,6 +14,7 @@ import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Quad;
 import com.jme3.texture.Image;
 import com.jme3.texture.Texture2D;
+import com.qualcomm.vuforia.CameraCalibration;
 import com.qualcomm.vuforia.CameraDevice;
 import com.qualcomm.vuforia.DataSet;
 import com.qualcomm.vuforia.Frame;
@@ -29,6 +29,7 @@ import com.qualcomm.vuforia.Tool;
 import com.qualcomm.vuforia.TrackableResult;
 import com.qualcomm.vuforia.Tracker;
 import com.qualcomm.vuforia.TrackerManager;
+import com.qualcomm.vuforia.Vec2F;
 import com.qualcomm.vuforia.Vec2I;
 import com.qualcomm.vuforia.VideoBackgroundConfig;
 import com.qualcomm.vuforia.VideoMode;
@@ -36,6 +37,7 @@ import com.qualcomm.vuforia.Vuforia;
 
 import java.nio.ByteBuffer;
 
+import ch.zuehlke.arscrabble.model.Board;
 import ch.zuehlke.arscrabble.vuforiautils.SampleMath;
 
 /**
@@ -51,7 +53,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     private Camera backgroundCamera;
     private Camera foregroundCamera;
     private DataSet mCurrentDataset;
-    private Spatial ninja;
+    private Spatial stone;
 
     private boolean isModelAdded = false;
 
@@ -106,20 +108,23 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     }
 
     private void addModel() {
-        rootNode.attachChild(ninja);
+
+        rootNode.attachChild(stone);
         isModelAdded = true;
     }
 
     private void removeModel() {
-        rootNode.detachChild(ninja);
+        rootNode.detachChild(stone);
         isModelAdded = false;
     }
 
     private void initForegroundScene() {
-
         // Load a model from test_data (OgreXML + material + texture)
-        ninja = assetManager.loadModel("Models/Ninja/stone_u.obj");
-        ninja.rotate((float) (Math.PI / 2),0, (float) Math.PI);
+        stone = assetManager.loadModel("Models/Stone/stone_u.obj");
+        stone.rotate((float) (Math.PI / 2), 0, (float) Math.PI);
+
+        stone.scale(0.1f);
+        stone.move(-50, 50, 0);
 
         // You must add a light to make the model visible
         addLight(ColorRGBA.White, -1, 0, 0);
@@ -158,6 +163,12 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
 
         updateTracking();
 
+        // Get Board
+        Board board = new Board();
+        //board.placeLetterStone(Letter.U,1,1);
+
+        drawBoard(board);
+
         if (hasBackgroundImage) {
             backgroundCameraTexture.setImage(backgroundCameraImage);
             backgroundCameraMaterial.setTexture("ColorMap", backgroundCameraTexture);
@@ -166,6 +177,10 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         // TODO: WTF? Why we need this method? Crash without...
         backgroundCameraGeometry.updateLogicalState(tpf);
         backgroundCameraGeometry.updateGeometricState();
+    }
+
+    private void drawBoard(Board board) {
+
     }
 
     private void initBackground() {
@@ -281,7 +296,45 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
 
             setCameraPoseNative(cam_x, cam_y, cam_z);
             setCameraOrientation(cam_right_x, cam_right_y, cam_right_z, cam_up_x, cam_up_y, cam_up_z, cam_dir_x, cam_dir_y, cam_dir_z);
+
+            float nearPlane = 1.0f;
+            float farPlane = 1000.0f;
+            CameraCalibration cameraCalibration = CameraDevice.getInstance().getCameraCalibration();
+
+            VideoBackgroundConfig config = Renderer.getInstance().getVideoBackgroundConfig();
+
+            float viewportWidth = config.getSize().getData()[0];
+            float viewportHeight = config.getSize().getData()[1];
+
+            Vec2F size = cameraCalibration.getSize();
+            Vec2F focalLength = cameraCalibration.getFocalLength();
+            float fovRadians = (float) (2 * Math.atan(0.5f * (size.getData()[1] / focalLength.getData()[1])));
+            float fovDegrees = (float) (fovRadians * 180.0f / Math.PI);
+            float aspectRatio = (size.getData()[0] / size.getData()[1]);
+
+            //adjust for screen vs camera size distorsion
+            float viewportDistort = 1.0f;
+
+            float screenWidth = settings.getWidth();
+            float screenHeight = settings.getHeight();
+            if (viewportWidth != screenWidth) {
+                viewportDistort = viewportWidth / (float) screenWidth;
+                fovDegrees = fovDegrees * viewportDistort;
+                aspectRatio = aspectRatio / viewportDistort;
+            }
+
+            if (viewportHeight != screenHeight) {
+                viewportDistort = viewportHeight / (float) screenHeight;
+                fovDegrees = fovDegrees / viewportDistort;
+                aspectRatio = aspectRatio * viewportDistort;
+            }
+
+            setCameraPerspective(fovDegrees, aspectRatio);
         }
+    }
+
+    private void setCameraPerspective(float fovDegrees, float aspectRatio) {
+        foregroundCamera.setFrustumPerspective(fovDegrees, aspectRatio, 1.0f, 1000.f);
     }
 
     private void setCameraOrientation(float cam_right_x, float cam_right_y, float cam_right_z, float cam_up_x, float cam_up_y, float cam_up_z, float cam_dir_x, float cam_dir_y, float cam_dir_z) {

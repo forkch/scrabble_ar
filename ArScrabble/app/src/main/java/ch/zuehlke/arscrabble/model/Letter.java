@@ -23,4 +23,13 @@ public enum Letter {
     public String getValue() {
         return value;
     }
+
+    public static Letter getLetterFor(String stringLetter) {
+        for(Letter letter : values()) {
+            if(letter.equals(stringLetter)) {
+                return letter;
+            }
+        }
+        throw new RuntimeException("Ever saw a scrabble with a letter '" + stringLetter + "'...jerk!");
+    }
 }
