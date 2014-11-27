@@ -7,6 +7,11 @@ public class Stone {
     private Letter letter;
     private StoneType type;
 
+    public Stone(Letter letter, StoneType type) {
+        this.letter = letter;
+        this.type = type;
+    }
+
     public Letter getLetter() {
         return letter;
     }
