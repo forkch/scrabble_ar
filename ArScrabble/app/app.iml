@@ -87,8 +87,8 @@
     <orderEntry type="library" exported="" name="jME3-jogg" level="project" />
     <orderEntry type="library" exported="" name="jME3-core" level="project" />
     <orderEntry type="library" exported="" name="jME3-plugins" level="project" />
+    <orderEntry type="module" module-name="tess-two" exported="" />
     <orderEntry type="module" module-name="opencv" exported="" />
-    <orderEntry type="module" module-name="tess-two" />
   </component>
 </module>
 
