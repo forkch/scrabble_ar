@@ -12,8 +12,17 @@ public class ScrabbleBoardMetrics {
     private static final float marginRightPercent = 6.76f / 100.f;
     private static final float marginTopPercent = 4.19f / 100.f;
     private static final float marginBottomPercent = 9.21f / 100.f;
-    private static final float cellHeightPercent = 5.726f / 100.f;
+    private static final float cellHeightPercent = 5.8f / 100.f;
+    private static final float cellWidthPercent = 5.726f / 100.f;
 
+    public static final int TOP_CORRECTION = -7;
+    public static final int BOTTOM_CORRECTION = 0;
+    public static final int RIGHT_CORRECTION = -4;
+    public static final int LEFT_CORRECTION = -2;
+    public static final float WIDTH_CORRECTION = 0.35f;
+    public static final float HEIGHT_CORRECTION = 0.45f;
+    private final float cols;
+    private final float rows;
 
     private int marginLeft = 44;
     private int marginRight = 44;
@@ -27,12 +36,17 @@ public class ScrabbleBoardMetrics {
     }
 
     public ScrabbleBoardMetrics(float cols, float rows) {
-        marginLeft = (int) (cols * marginLeftPercent);
-        marginRight = (int) (cols * marginRightPercent);
-        marginTop = (int) (rows * marginTopPercent);
-        marginBottom = (int) (rows * marginBottomPercent);
-        cellWidth = (int) (rows * cellHeightPercent);
-        cellHeight = (int) (rows * cellHeightPercent);
+        this.cols = cols;
+        this.rows = rows;
+        marginLeft = (int) (cols * marginLeftPercent + LEFT_CORRECTION);
+        marginRight = (int) (cols * marginRightPercent + RIGHT_CORRECTION);
+        marginTop = (int) (rows * marginTopPercent + TOP_CORRECTION);
+        marginBottom = (int) (rows * marginBottomPercent + BOTTOM_CORRECTION);
+
+        float boardWidth = cols - marginLeft - marginRight;
+        float boardHeight = rows - marginTop - marginBottom;
+        cellWidth = (int) ((boardWidth / 15.f));
+        cellHeight = (int) ((boardHeight / 15.f));
     }
 
     public static ScrabbleBoardMetrics metricsFromImage(Mat image) {
@@ -43,49 +57,44 @@ public class ScrabbleBoardMetrics {
         return marginLeft;
     }
 
-    public void setMarginLeft(int marginLeft) {
-        this.marginLeft = marginLeft;
-    }
 
     public int getMarginRight() {
         return marginRight;
     }
 
-    public void setMarginRight(int marginRight) {
-        this.marginRight = marginRight;
-    }
 
     public int getMarginTop() {
         return marginTop;
     }
 
-    public void setMarginTop(int marginTop) {
-        this.marginTop = marginTop;
-    }
 
     public int getMarginBottom() {
         return marginBottom;
     }
 
-    public void setMarginBottom(int marginBottom) {
-        this.marginBottom = marginBottom;
-    }
 
     public int getCellWidth() {
         return cellWidth;
     }
 
-    public void setCellWidth(int cellWidth) {
-        this.cellWidth = cellWidth;
-    }
 
     public int getCellHeight() {
         return cellHeight;
     }
 
-    public void setCellHeight(int cellHeight) {
-        this.cellHeight = cellHeight;
+    public float getX(int verticalIdx) {
+        final float x = this.getMarginLeft() + verticalIdx * this.getCellWidth() + verticalIdx * ScrabbleBoardMetrics.WIDTH_CORRECTION;
+        if (x < 0 || x > cols)
+            throw new IllegalStateException("x out of bounds: " + x);
+        return x;
     }
 
+    public float getY(int horizontalIdx) {
+        final float y = this.getMarginTop() + horizontalIdx * this.getCellHeight() + horizontalIdx * ScrabbleBoardMetrics.HEIGHT_CORRECTION;
+
+        if (y < 0 || y > rows)
+            throw new IllegalStateException("y out of bounds: " + y);
+        return y;
+    }
 
 }

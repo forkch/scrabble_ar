@@ -12,46 +12,68 @@ public class ScrabbleBoardSegmenter {
 
     private static final String LOGTAG = ScrabbleBoardSegmenter.class.getSimpleName();
 
+    private static Scalar boundary = new Scalar(255, 255, 0);
     private static Scalar horizontalLineColor = new Scalar(255, 0, 0);
     private static Scalar verticalLineColor = new Scalar(0, 255, 0);
-    private static int lineThickness = 4;
+    private static int lineThickness = 2;
+
+    private ScrabbleBoardMetrics metrics;
+
+    public ScrabbleBoardSegmenter(Mat image) {
+        this.metrics = ScrabbleBoardMetrics.metricsFromImage(image);
+    }
 
 
-    public static Mat drawSegmentationLines(Mat image) {
+    public Mat drawSegmentationLines(Mat image) {
 
-        final ScrabbleBoardMetrics scrabbleBoardMetrics = ScrabbleBoardMetrics.metricsFromImage(image);
-        int currentX = scrabbleBoardMetrics.getMarginLeft();
-        int currentY = scrabbleBoardMetrics.getMarginTop();
+        Core.rectangle(image,
+                new Point(metrics.getMarginLeft(), metrics.getMarginTop()),
+                new Point(image.rows() - metrics.getMarginRight(), image.cols() - metrics.getMarginBottom()),
+                boundary, lineThickness);
+
         for (int verticalIdx = 0; verticalIdx < 16; verticalIdx++) {
-            Core.line(image, new Point(currentX, currentY), new Point(currentX, image.rows() - scrabbleBoardMetrics.getMarginBottom()), verticalLineColor, lineThickness);
-            currentX += scrabbleBoardMetrics.getCellWidth();
+            float x = metrics.getX(verticalIdx);
+            Core.line(image,
+                    new Point(x, metrics.getMarginTop()),
+                    new Point(x, image.rows() - metrics.getMarginBottom()),
+                    verticalLineColor, lineThickness);
         }
 
-        currentX = scrabbleBoardMetrics.getMarginLeft();
         for (int horizontalIdx = 0; horizontalIdx < 16; horizontalIdx++) {
-            Core.line(image, new Point(currentX, currentY), new Point(image.cols() - scrabbleBoardMetrics.getMarginRight(), currentY), horizontalLineColor, lineThickness);
-            currentY += scrabbleBoardMetrics.getCellHeight();
+            float y = metrics.getY(horizontalIdx);
+            Core.line(image,
+                    new Point(metrics.getMarginLeft(), y),
+                    new Point(image.cols() - metrics.getMarginRight(), y),
+                    horizontalLineColor, lineThickness);
         }
 
         return image;
 
     }
 
+    public Mat getScrabbleTile(Mat image, int horizontalIdx, int verticalIdx) {
 
-    public static Mat getScrabbleTile(Mat image, int horizontalIdx, int verticalIdx, ScrabbleBoardMetrics scrabbleBoardMetrics) {
+        int x1 = (int) metrics.getX(horizontalIdx);
+        int y1 = (int) metrics.getY(verticalIdx);
 
-        int rowStart = (verticalIdx * scrabbleBoardMetrics.getCellHeight()) + scrabbleBoardMetrics.getMarginTop();
-        int colStart = (horizontalIdx * scrabbleBoardMetrics.getCellWidth()) + scrabbleBoardMetrics.getMarginLeft();
+        int x2 = (int) metrics.getX(horizontalIdx + 1);
+        int y2 = (int) metrics.getY(verticalIdx + 1);
 
         final Mat scrabbleTile = new Mat();
 
-        image.submat(rowStart, rowStart + scrabbleBoardMetrics.getCellHeight(), colStart, colStart + scrabbleBoardMetrics.getCellWidth()).copyTo(scrabbleTile);
+        image.submat(y1, y2, x1, x2).copyTo(scrabbleTile);
 
-        Point lowerRight = new Point(scrabbleTile.cols(), scrabbleTile.rows());
-        Point upperRight = new Point(lowerRight.x - 11, lowerRight.y - 11);
-        Core.rectangle(scrabbleTile, upperRight, lowerRight, new Scalar(255, 255, 255), -1);
+        //maskPointNumber(scrabbleTile);
 
         return scrabbleTile;
     }
+
+    public void maskPointNumber(Mat scrabbleTile) {
+        Point lowerRight = new Point(scrabbleTile.cols(), scrabbleTile.rows());
+        Point upperRight = new Point(lowerRight.x - 11, lowerRight.y - 11);
+        Core.rectangle(scrabbleTile, upperRight, lowerRight, new Scalar(255, 255, 255), -1);
+    }
+
+
 
 }
