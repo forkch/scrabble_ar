@@ -9,7 +9,7 @@ Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd /Users/chsueess/Documents/Arbeit/Zühlke/Themencamp AR 2014/Blender Stones/back.jpg
+map_Kd back.jpg
 
 newmtl Material_front_h.psd
 Ns 96.078431
@@ -19,7 +19,7 @@ Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd /Users/chsueess/Documents/Arbeit/Zühlke/Themencamp AR 2014/Blender Stones/front/front_h.psd
+map_Kd front_h.psd
 
 newmtl Material_side.jpg
 Ns 96.078431
@@ -29,4 +29,4 @@ Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd /Users/chsueess/Documents/Arbeit/Zühlke/Themencamp AR 2014/Blender Stones/side.jpg
+map_Kd side.jpg
