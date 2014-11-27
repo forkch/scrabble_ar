@@ -1,4 +1,4 @@
-package ch.zuehlke.arscrabble;
+package ch.zuehlke.arscrabble.vision;
 
 /**
  * Created with love by fork on 26.11.14.

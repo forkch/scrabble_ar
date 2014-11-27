@@ -1,4 +1,4 @@
-package ch.zuehlke.arscrabble;
+package ch.zuehlke.arscrabble.vision;
 
 import android.util.Log;
 
@@ -9,6 +9,8 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+
+import ch.zuehlke.arscrabble.VectorUtils;
 
 /**
  * Removes the perspective distortion from an input image.
