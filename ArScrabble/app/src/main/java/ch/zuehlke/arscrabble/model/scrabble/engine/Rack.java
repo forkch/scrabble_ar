@@ -24,6 +24,17 @@ public class Rack {
         stones.addAll(newStones);
     }
 
+    public Stone pop(Letter letter) {
+        for (Stone stone : stones) {
+            if(stone.getLetter().equals(letter)) {
+                if(stones.remove(stone)) {
+                    return stone;
+                };
+            }
+        }
+        throw new RuntimeException("The rack does not contain a stone with the letter '" + letter + "'");
+    }
+
     public int getNumberOfMissingStones() {
         return MAX_NUMBER_OF_STONES - stones.size();
     }

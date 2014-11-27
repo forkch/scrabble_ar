@@ -64,12 +64,10 @@ public class JMonkeyApplication extends SimpleApplication {
     private Spatial backgroundCameraGeometry;
     private Image backgroundCameraImage;
     private ByteBuffer backgroundImageBuffer;
-    private Camera backgroundCamera;
     private Camera foregroundCamera;
     private DataSet mCurrentDataset;
     private HashMap<VirtualStone, Spatial> virtualStones = new HashMap<VirtualStone, Spatial>();
     private ScrabbleBoardMetrics metrics;
-    private Scrabble game;
     private Player stefan;
     private ScrabbleSolver scrabbleSolver;
 
@@ -91,7 +89,7 @@ public class JMonkeyApplication extends SimpleApplication {
 
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB888, true);
 
-        game = new Scrabble();
+        Scrabble game = new Scrabble();
 
         stefan = new Player("Stefan", new Rack(getStefansStones(game.getStoneBag())));
         Player benjamin = new Player("Benjamin", new Rack(getBenjaminsStones(game.getStoneBag())));
@@ -100,7 +98,9 @@ public class JMonkeyApplication extends SimpleApplication {
         game.addPlayer(benjamin);
 
         game.start();
+
         scrabbleSolver = new ScrabbleSolver(game);
+         /* GAME */
     }
 
     private static List<Stone> getStefansStones(StoneBag stoneBag) {
@@ -275,10 +275,6 @@ public class JMonkeyApplication extends SimpleApplication {
         }
     }
 
-    private void updateBackgroundVideo(float tpf) {
-
-    }
-
     private void moveToField(Spatial stone, int x, int y) {
 
         // TODO: Where to add this? -> Solver is 0 based we are 1 based
@@ -322,7 +318,7 @@ public class JMonkeyApplication extends SimpleApplication {
         backgroundCameraGeometry.setMaterial(backgroundCameraMaterial);
 
         backgroundCameraTexture = new Texture2D();
-        backgroundCamera = createBackgroundCamera(width, height);
+        Camera backgroundCamera = createBackgroundCamera(width, height);
 
         ViewPort videoBackgroundViewPort = renderManager.createMainView("VideoBGView", backgroundCamera);
         videoBackgroundViewPort.attachScene(backgroundCameraGeometry);
@@ -340,8 +336,7 @@ public class JMonkeyApplication extends SimpleApplication {
 
     public void initializeImageBuffer(int width, int height) {
         int bufferSizeR = width * height * 24;
-        byte[] previewBufferSize = new byte[bufferSizeR];
-        backgroundImageBuffer = ByteBuffer.allocateDirect(previewBufferSize.length);
+        backgroundImageBuffer = ByteBuffer.allocateDirect(bufferSizeR);
         backgroundCameraImage = new Image(Image.Format.RGB8, width, height, backgroundImageBuffer);
         backgroundImageBuffer.clear();
     }
@@ -368,11 +363,11 @@ public class JMonkeyApplication extends SimpleApplication {
 
             backgroundCameraTexture.setImage(backgroundCameraImage);
             backgroundCameraMaterial.setTexture("ColorMap", backgroundCameraTexture);
-
-            // TODO: WTF? Why we need this method? Crash without...
-            backgroundCameraGeometry.updateLogicalState(tpf);
-            backgroundCameraGeometry.updateGeometricState();
         }
+
+        // TODO: WTF? Why we need this method? Crash without...
+        backgroundCameraGeometry.updateLogicalState(tpf);
+        backgroundCameraGeometry.updateGeometricState();
     }
 
     private com.qualcomm.vuforia.Image getRGB888Image(Frame frame) {
@@ -432,7 +427,7 @@ public class JMonkeyApplication extends SimpleApplication {
             float aspectRatio = (size.getData()[0] / size.getData()[1]);
 
             //adjust for screen vs camera size distorsion
-            float viewportDistort = 1.0f;
+            float viewportDistort;
 
             float screenWidth = settings.getWidth();
             float screenHeight = settings.getHeight();

@@ -18,19 +18,18 @@ public class ScrabbleSample {
         
         game.start();
 
-
-        
+        game.placeWord(7, 7, Direction.DOWN, Letter.M, Letter.A, Letter.U, Letter.S);
     }
 
     private static List<Stone> getStefansStones(StoneBag stoneBag) {
         List<Stone> stefansStones = new ArrayList<Stone>();
-        stefansStones.add(stoneBag.pop(Letter.A));
+        stefansStones.add(stoneBag.pop(Letter.U));
         stefansStones.add(stoneBag.pop(Letter.D));
         stefansStones.add(stoneBag.pop(Letter.F));
         stefansStones.add(stoneBag.pop(Letter.B));
-        stefansStones.add(stoneBag.pop(Letter.O));
+        stefansStones.add(stoneBag.pop(Letter.M));
         stefansStones.add(stoneBag.pop(Letter.A));
-        stefansStones.add(stoneBag.pop(Letter.K));
+        stefansStones.add(stoneBag.pop(Letter.S));
         return stefansStones;
     }
 

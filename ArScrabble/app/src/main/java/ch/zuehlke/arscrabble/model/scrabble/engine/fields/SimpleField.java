@@ -2,14 +2,12 @@ package ch.zuehlke.arscrabble.model.scrabble.engine.fields;
 
 import ch.zuehlke.arscrabble.model.scrabble.engine.Letter;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Stone;
-import ch.zuehlke.arscrabble.model.scrabble.engine.StoneType;
 
 /**
  * Created by chsueess on 25.11.14.
  */
 public class SimpleField {
     private Stone stone;
-    private StoneType stoneType;
 
     public int calculatePoints() {
         return getLetter().getPoints();
