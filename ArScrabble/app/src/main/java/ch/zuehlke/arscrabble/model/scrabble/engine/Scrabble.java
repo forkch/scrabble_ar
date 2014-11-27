@@ -44,7 +44,7 @@ public class Scrabble {
             } else if (Direction.RIGHT.equals(direction)) {
                 x++;
             }
-            board.placeVirtualStone(stone, x, y);
+            board.placeStone(stone, x, y);
         }
 
         activePlayerIndex = nextPlayer();

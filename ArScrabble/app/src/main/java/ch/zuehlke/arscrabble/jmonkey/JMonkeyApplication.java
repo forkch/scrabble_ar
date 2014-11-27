@@ -51,7 +51,6 @@ import ch.zuehlke.arscrabble.model.scrabble.engine.Rack;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Scrabble;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Stone;
 import ch.zuehlke.arscrabble.model.scrabble.engine.StoneBag;
-import ch.zuehlke.arscrabble.model.scrabble.engine.StoneType;
 import ch.zuehlke.arscrabble.model.scrabble.solver.ScrabbleSolver;
 import ch.zuehlke.arscrabble.model.scrabble.solver.VirtualStone;
 import ch.zuehlke.arscrabble.vision.ScrabbleBoardMetrics;
@@ -104,16 +103,16 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         game.start();
          /* GAME */
 
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 1);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 2);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 3);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 4);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 5);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 6);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 7);
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 8);
+        board.placeStone(new Stone(Letter.H), 1, 1);
+        board.placeStone(new Stone(Letter.H), 1, 2);
+        board.placeStone(new Stone(Letter.H), 1, 3);
+        board.placeStone(new Stone(Letter.H), 1, 4);
+        board.placeStone(new Stone(Letter.H), 1, 5);
+        board.placeStone(new Stone(Letter.H), 1, 6);
+        board.placeStone(new Stone(Letter.H), 1, 7);
+        board.placeStone(new Stone(Letter.H), 1, 8);
 
-        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 8, 8);
+        board.placeStone(new Stone(Letter.H), 8, 8);
     }
 
     private static List<Stone> getStefansStones(StoneBag stoneBag) {

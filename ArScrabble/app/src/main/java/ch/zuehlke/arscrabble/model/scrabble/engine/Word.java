@@ -9,9 +9,9 @@ import java.util.List;
 public class Word {
     List<Stone> stones = new ArrayList<Stone>();
 
-    public Word(String wordString, StoneType stoneType) {
+    public Word(String wordString) {
         for(char letter : wordString.toCharArray()) {
-            addStone(new Stone(Letter.getLetterFor(letter), stoneType));
+            addStone(new Stone(Letter.getLetterFor(letter)));
         }
     }
 

@@ -27,7 +27,7 @@ public class Rack {
     public Stone pop(Letter letter) {
         for (Stone stone : stones) {
             if(stone.getLetter().equals(letter)) {
-                if(stones.remove(letter)) {
+                if(stones.remove(stone)) {
                     return stone;
                 };
             }
