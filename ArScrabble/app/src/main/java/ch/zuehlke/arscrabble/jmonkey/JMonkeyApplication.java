@@ -43,6 +43,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ch.zuehlke.arscrabble.model.scrabble.engine.Letter;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Player;
@@ -74,6 +75,23 @@ public class JMonkeyApplication extends SimpleApplication {
     private boolean isBoardTracked;
     private boolean isBoardVisible;
 
+    public void roundFinished() {
+
+    }
+
+    public void startGame(HashMap<String, String> players) {
+        Scrabble game = new Scrabble();
+
+//        for (Map.Entry<String, String> playerInfo : players.entrySet()) {
+//            Player player = new Player(playerInfo.getKey(), new Rack(getStones(playerInfo.getValue(), game.getStoneBag())));
+//            game.addPlayer(player);
+//        }
+
+        //game.start();
+
+        scrabbleSolver = new ScrabbleSolver(game);
+    }
+
     @Override
     public void simpleInitApp() {
         // We use custom viewports - so the main viewport does not need to contain the rootNode
@@ -88,43 +106,18 @@ public class JMonkeyApplication extends SimpleApplication {
         initForegroundScene();
 
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB888, true);
-
-        Scrabble game = new Scrabble();
-
-        stefan = new Player("Stefan", new Rack(getStefansStones(game.getStoneBag())));
-        Player benjamin = new Player("Benjamin", new Rack(getBenjaminsStones(game.getStoneBag())));
-
-        game.addPlayer(stefan);
-        game.addPlayer(benjamin);
-
-        game.start();
-
-        scrabbleSolver = new ScrabbleSolver(game);
-         /* GAME */
     }
 
-    private static List<Stone> getStefansStones(StoneBag stoneBag) {
-        List<Stone> stefansStones = new ArrayList<Stone>();
-        stefansStones.add(stoneBag.pop(Letter.A));
-        stefansStones.add(stoneBag.pop(Letter.B));
-        stefansStones.add(stoneBag.pop(Letter.C));
-        stefansStones.add(stoneBag.pop(Letter.D));
-        stefansStones.add(stoneBag.pop(Letter.E));
-        stefansStones.add(stoneBag.pop(Letter.F));
-        stefansStones.add(stoneBag.pop(Letter.G));
-        return stefansStones;
-    }
+    private static List<Stone> getStones(String stoneDefinition, StoneBag stoneBag) {
 
-    private static List<Stone> getBenjaminsStones(StoneBag stoneBag) {
-        List<Stone> benjaminsStones = new ArrayList<Stone>();
-        benjaminsStones.add(stoneBag.pop(Letter.G));
-        benjaminsStones.add(stoneBag.pop(Letter.H));
-        benjaminsStones.add(stoneBag.pop(Letter.S));
-        benjaminsStones.add(stoneBag.pop(Letter.T));
-        benjaminsStones.add(stoneBag.pop(Letter.M));
-        benjaminsStones.add(stoneBag.pop(Letter.O));
-        benjaminsStones.add(stoneBag.pop(Letter.K));
-        return benjaminsStones;
+        List<Stone> stones = new ArrayList<Stone>();
+        String[] stoneParts = stoneDefinition.split(",");
+        for (String stone : stoneParts) {
+            stone = stone.trim().toUpperCase();
+            stones.add(stoneBag.pop(Letter.valueOf(stone)));
+        }
+
+        return stones;
     }
 
     private void initTrackers() {
@@ -232,10 +225,13 @@ public class JMonkeyApplication extends SimpleApplication {
             isBoardVisible = true;
         }
 
-        List<VirtualStone> allVirtualStones = scrabbleSolver.getWord(stefan);
+        if (scrabbleSolver != null) {
 
-        removeNotExistingStones(allVirtualStones);
-        addNewStones(allVirtualStones);
+            List<VirtualStone> allVirtualStones = scrabbleSolver.getWord(stefan);
+
+            removeNotExistingStones(allVirtualStones);
+            addNewStones(allVirtualStones);
+        }
     }
 
     private void addNewStones(List<VirtualStone> allVirtualStones) {
@@ -373,6 +369,7 @@ public class JMonkeyApplication extends SimpleApplication {
 
     private com.qualcomm.vuforia.Image getRGB888Image(Frame frame) {
         com.qualcomm.vuforia.Image image = null;
+        int num = frame.getNumImages();
         for (int tIdx = 0; tIdx < frame.getNumImages(); tIdx++) {
             com.qualcomm.vuforia.Image vuforiaImage = frame.getImage(tIdx);
             if (vuforiaImage.getFormat() == PIXEL_FORMAT.RGB888) {

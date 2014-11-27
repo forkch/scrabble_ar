@@ -46,7 +46,7 @@ public class ScrabbleBoardMetrics {
             cellWidth = (int) ((boardWidth / 15.f));
             cellHeight = (int) ((boardHeight / 15.f));
         } else {
-            // TODO: This code is used to place jmonkey spatials on the board.. 
+            // TODO: This code is used to place jmonkey spatials on the board..
             marginLeft = (int) (cols * marginLeftPercent);
             marginRight = (int) (cols * marginRightPercent);
             marginTop = (int) (rows * marginTopPercent);

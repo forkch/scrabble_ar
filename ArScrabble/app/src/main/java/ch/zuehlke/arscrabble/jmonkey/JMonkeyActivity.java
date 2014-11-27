@@ -1,11 +1,17 @@
 package ch.zuehlke.arscrabble.jmonkey;
 
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
 
 import com.jme3.app.AndroidHarness;
 import com.jme3.system.android.AndroidConfigChooser;
 import com.qualcomm.vuforia.Vuforia;
+
+import java.util.HashMap;
 
 public class JMonkeyActivity extends AndroidHarness {
 
@@ -23,5 +29,39 @@ public class JMonkeyActivity extends AndroidHarness {
 
         Vuforia.setInitParameters(this, Vuforia.GL_20);
         Vuforia.init();
+
+        Button btn = new Button(this);
+        btn.setText("Spielzug abgeschlossen");
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getJMonkeyApplication().roundFinished();
+            }
+        });
+
+        addContentView(btn, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        HashMap<String, String> players = new HashMap<String, String>();
+        Intent intent = getIntent();
+
+        addPlayerInfosFromIntent(players, intent, "player1Name", "player1NameStones");
+        addPlayerInfosFromIntent(players, intent, "player2Name", "player2NameStones");
+        addPlayerInfosFromIntent(players, intent, "player3Name", "player3NameStones");
+        addPlayerInfosFromIntent(players, intent, "player4Name", "player4NameStones");
+
+        getJMonkeyApplication().startGame(players);
+    }
+
+    private void addPlayerInfosFromIntent(HashMap<String, String> players, Intent intent, String nameExtra, String stoneExtra) {
+        String playerName = intent.getStringExtra(nameExtra);
+        String playerStone = intent.getStringExtra(stoneExtra);
+
+        if (playerName != null && !playerName.equals("") && playerStone != null && !playerStone.equals("")) {
+            players.put(playerName, playerStone);
+        }
+    }
+
+    private JMonkeyApplication getJMonkeyApplication() {
+        return (JMonkeyApplication) app;
     }
 }
