@@ -8,7 +8,7 @@ import ch.zuehlke.arscrabble.model.scrabble.engine.fields.SimpleField;
  */
 public class Board {
 
-    private static final int BOARD_SIZE = 15;
+    public static final int BOARD_SIZE = 15;
     private static final String[][] BOARD_TEMPLATE = {
             {"3W", "  ", "  ", "2L", "  ", "  ", "  ", "3W", "  ", "  ", "  ", "2L", "  ", "  ", "3W"},
             {"  ", "2W", "  ", "  ", "  ", "3L", "  ", "  ", "  ", "3L", "  ", "  ", "  ", "2W", "  "},
@@ -82,4 +82,18 @@ public class Board {
         }
         return false;
     }
+
+    public boolean isEmpty() {
+        for (int i = 0; i < board.length; i++) {
+            SimpleField[] fields = board[i];
+            for (int j = 0; j < fields.length; j++) {
+                if(board[i][j].hasStone()) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+
 }

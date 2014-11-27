@@ -32,4 +32,9 @@ public class SimpleField {
     public Stone getStone(){
         return stone;
     }
+
+    public boolean hasStone() {
+        return stone != null;
+    }
+
 }

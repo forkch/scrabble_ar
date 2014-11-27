@@ -34,10 +34,18 @@ public class Scrabble {
         return stoneBag;
     }
 
-    public void placeWord(int x, int y, Direction direction, Letter... letters) {
+    public void placeWord(Word word) {
         Rack rack = players.get(activePlayerIndex).getRack();
 
-        for(Letter letter : letters) {
+        int x = word.getX();
+        int y = word.getY();
+        Direction direction = word.getDirection();
+
+        if(! hasLegalPosition(word)) {
+            throw new RuntimeException("You can not position your word without trouching an existing one... nice try!");
+        }
+
+        for(Letter letter : word.getLetters()) {
             Stone stone = rack.pop(letter);
 
             if(! board.isStoneWithLetter(letter, x, y)) {
@@ -56,6 +64,46 @@ public class Scrabble {
         }
 
         activePlayerIndex = nextPlayer();
+    }
+
+    private boolean hasLegalPosition(Word word) {
+        if(board.isEmpty()) {
+            return doesTouchTheCenter(word);
+        } else {
+            return doesTouchOtherWord(word);
+        }
+    }
+
+    private boolean doesTouchOtherWord(Word word) {
+        return true;
+        /*if(Direction.DOWN.equals(word.getDirection())) {
+            // TODO Check IndexOutOfBounce
+            for(int height=0; height<word.size(); height++) {
+                for(int width=0; width<3; width++) {
+                    if(board.getFields()[word.getX() + width - 1][word.getY()+ height].hasStone()) {
+                        return true;
+                    }
+                }
+            }
+            if(board.getFields()[word.getX()][word.getY() - 1].hasStone()) {
+                return true;
+            }
+
+            if(board.getFields()[word.getX()][word.getY() + word.size() + 1].hasStone()) {
+                return true;
+            }
+            return false;
+        } else if(Direction.RIGHT.equals(word.getDirection())) {
+            // TODO Check as well!
+        }
+        throw new RuntimeException("No word direction defined... looser!");*/
+    }
+
+    private boolean doesTouchTheCenter(Word word) {
+        int boardCenter = (Board.BOARD_SIZE - 1) / 2;
+        boolean legalX = word.getX() <= boardCenter && (word.getX()+word.size()) >= boardCenter;
+        boolean legalY = word.getY() <= boardCenter && (word.getY()+word.size()) >= boardCenter;
+        return legalX && legalY;
     }
 
     private int nextPlayer() {
