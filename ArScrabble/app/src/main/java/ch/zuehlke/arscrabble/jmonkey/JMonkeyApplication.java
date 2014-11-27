@@ -43,6 +43,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ch.zuehlke.arscrabble.model.scrabble.engine.Letter;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Player;
@@ -68,11 +69,42 @@ public class JMonkeyApplication extends SimpleApplication {
     private DataSet mCurrentDataset;
     private HashMap<VirtualStone, Spatial> virtualStones = new HashMap<VirtualStone, Spatial>();
     private ScrabbleBoardMetrics metrics;
-    private Player stefan;
     private ScrabbleSolver scrabbleSolver;
 
     private boolean isBoardTracked;
     private boolean isBoardVisible;
+    private ScrabbleUI ui;
+    private Scrabble game;
+
+    public void roundFinished() {
+
+    }
+
+    public void startGame(HashMap<String, String> players) {
+        game = new Scrabble();
+
+        for (Map.Entry<String, String> playerInfo : players.entrySet()) {
+            Player player = new Player(playerInfo.getKey(), new Rack(getStones(playerInfo.getValue(), game.getStoneBag())));
+            game.addPlayer(player);
+        }
+
+        game.start();
+
+        scrabbleSolver = new ScrabbleSolver(game);
+
+        updateActivePlayer();
+    }
+
+    private void updateActivePlayer() {
+        Player activePlayer = game.getActivePlayer();
+        ui.UpdatePlayer(activePlayer.getName());
+        List<Stone> stones = activePlayer.getRack().getStones();
+        String remainingStones = "";
+        for (Stone stone : stones) {
+            remainingStones += stone.getLetter().getValue();
+        }
+        ui.UpdatePlayerStones(remainingStones);
+    }
 
     @Override
     public void simpleInitApp() {
@@ -88,43 +120,17 @@ public class JMonkeyApplication extends SimpleApplication {
         initForegroundScene();
 
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB888, true);
-
-        Scrabble game = new Scrabble();
-
-        stefan = new Player("Stefan", new Rack(getStefansStones(game.getStoneBag())));
-        Player benjamin = new Player("Benjamin", new Rack(getBenjaminsStones(game.getStoneBag())));
-
-        game.addPlayer(stefan);
-        game.addPlayer(benjamin);
-
-        game.start();
-
-        scrabbleSolver = new ScrabbleSolver(game);
-         /* GAME */
     }
 
-    private static List<Stone> getStefansStones(StoneBag stoneBag) {
-        List<Stone> stefansStones = new ArrayList<Stone>();
-        stefansStones.add(stoneBag.pop(Letter.A));
-        stefansStones.add(stoneBag.pop(Letter.D));
-        stefansStones.add(stoneBag.pop(Letter.F));
-        stefansStones.add(stoneBag.pop(Letter.B));
-        stefansStones.add(stoneBag.pop(Letter.O));
-        stefansStones.add(stoneBag.pop(Letter.A));
-        stefansStones.add(stoneBag.pop(Letter.K));
-        return stefansStones;
-    }
+    private static List<Stone> getStones(String stoneDefinition, StoneBag stoneBag) {
 
-    private static List<Stone> getBenjaminsStones(StoneBag stoneBag) {
-        List<Stone> benjaminsStones = new ArrayList<Stone>();
-        benjaminsStones.add(stoneBag.pop(Letter.G));
-        benjaminsStones.add(stoneBag.pop(Letter.H));
-        benjaminsStones.add(stoneBag.pop(Letter.S));
-        benjaminsStones.add(stoneBag.pop(Letter.T));
-        benjaminsStones.add(stoneBag.pop(Letter.M));
-        benjaminsStones.add(stoneBag.pop(Letter.O));
-        benjaminsStones.add(stoneBag.pop(Letter.K));
-        return benjaminsStones;
+        List<Stone> stones = new ArrayList<Stone>();
+        char[] stoneParts = stoneDefinition.toCharArray();
+        for (char stone : stoneParts) {
+            stones.add(stoneBag.pop(Letter.valueOf(stone + "".toUpperCase())));
+        }
+
+        return stones;
     }
 
     private void initTrackers() {
@@ -163,7 +169,7 @@ public class JMonkeyApplication extends SimpleApplication {
     }
 
     private Spatial createStone(Letter letter) {
-        String letterModel = "Models/Stone/stone_n.obj";
+        String letterModel = "Models/Stone/stone_" + letter.getTextureName() + ".obj";
         Spatial stone = assetManager.loadModel(letterModel);
         stone.rotate((float) (Math.PI / 2), 0, (float) Math.PI);
         stone.scale(0.27f);
@@ -232,10 +238,13 @@ public class JMonkeyApplication extends SimpleApplication {
             isBoardVisible = true;
         }
 
-        List<VirtualStone> allVirtualStones = scrabbleSolver.getWord(stefan);
+        if (scrabbleSolver != null) {
 
-        removeNotExistingStones(allVirtualStones);
-        addNewStones(allVirtualStones);
+            List<VirtualStone> allVirtualStones = scrabbleSolver.getWord(game.getActivePlayer());
+
+            removeNotExistingStones(allVirtualStones);
+            addNewStones(allVirtualStones);
+        }
     }
 
     private void addNewStones(List<VirtualStone> allVirtualStones) {
@@ -360,7 +369,7 @@ public class JMonkeyApplication extends SimpleApplication {
             backgroundCameraImage.setData(backgroundImageBuffer);
 
             Mat imageMat = Mat.zeros(image.getHeight(), image.getWidth(), CvType.CV_8UC3);
-            metrics = new ScrabbleBoardMetrics(imageMat);
+            metrics = ScrabbleBoardMetrics.metricsFromImageFrom3D(imageMat);
 
             backgroundCameraTexture.setImage(backgroundCameraImage);
             backgroundCameraMaterial.setTexture("ColorMap", backgroundCameraTexture);
@@ -373,6 +382,7 @@ public class JMonkeyApplication extends SimpleApplication {
 
     private com.qualcomm.vuforia.Image getRGB888Image(Frame frame) {
         com.qualcomm.vuforia.Image image = null;
+        int num = frame.getNumImages();
         for (int tIdx = 0; tIdx < frame.getNumImages(); tIdx++) {
             com.qualcomm.vuforia.Image vuforiaImage = frame.getImage(tIdx);
             if (vuforiaImage.getFormat() == PIXEL_FORMAT.RGB888) {
@@ -505,5 +515,9 @@ public class JMonkeyApplication extends SimpleApplication {
         if (imageTracker != null) {
             imageTracker.start();
         }
+    }
+
+    public void setUI(ScrabbleUI ui) {
+        this.ui = ui;
     }
 }

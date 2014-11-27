@@ -32,7 +32,7 @@ public class Rack {
                 };
             }
         }
-        throw new RuntimeException("The rack does not contain a stone with the letter '" + letter + "'");
+        return null;
     }
 
     public int getNumberOfMissingStones() {

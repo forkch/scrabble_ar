@@ -20,7 +20,13 @@ public class ScrabbleSolver {
     public List<VirtualStone> getWord(Player player) {
         List<VirtualStone> virtualStones = new ArrayList<VirtualStone>();
         List<Stone> stones = player.getRack().getStones();
-        virtualStones.add(new VirtualStone(stones.get(0), 4, 4));
+        virtualStones.add(new VirtualStone(stones.get(0), 1, 8));
+        virtualStones.add(new VirtualStone(stones.get(1), 2, 8));
+        virtualStones.add(new VirtualStone(stones.get(2), 3, 8));
+        virtualStones.add(new VirtualStone(stones.get(3), 4, 8));
+        virtualStones.add(new VirtualStone(stones.get(4), 5, 8));
+        virtualStones.add(new VirtualStone(stones.get(5), 6, 8));
+        virtualStones.add(new VirtualStone(stones.get(6), 7, 8));
         return virtualStones;
     }
 

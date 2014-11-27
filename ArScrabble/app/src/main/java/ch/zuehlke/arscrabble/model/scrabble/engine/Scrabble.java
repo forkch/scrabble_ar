@@ -30,25 +30,14 @@ public class Scrabble {
         activePlayerIndex = 0;
     }
 
+    public Turn newTurn() {
+        return new Turn(board, players.get(activePlayerIndex));
+    }
+
     public StoneBag getStoneBag() {
         return stoneBag;
     }
 
-    public void placeWord(int x, int y, Direction direction, Letter... letters) {
-        Rack rack = players.get(activePlayerIndex).getRack();
-
-        for(Letter letter : letters) {
-            Stone stone = rack.pop(letter);
-            if(Direction.DOWN.equals(direction)) {
-                y++;
-            } else if (Direction.RIGHT.equals(direction)) {
-                x++;
-            }
-            board.placeStone(stone, x, y);
-        }
-
-        activePlayerIndex = nextPlayer();
-    }
 
     private int nextPlayer() {
         int nextPlayerIndex = activePlayerIndex + 1;
@@ -57,5 +46,22 @@ public class Scrabble {
         } else {
             return 0;
         }
+    }
+
+    public void executeTurn(Turn turn) {
+        turn.validate();
+        for(TurnStep turnStep : turn.getSteps()) {
+            board.placeStone(turnStep.getStone(), turnStep.getX(), turnStep.getY());
+        }
+        board.paint();
+        activePlayerIndex = nextPlayer();
+    }
+
+    public Board getBoard() {
+        return board;
+    }
+
+    public Player getActivePlayer(){
+        return players.get(activePlayerIndex);
     }
 }
