@@ -1,5 +1,6 @@
 package ch.zuehlke.arscrabble.vision;
 
+import android.os.Environment;
 import android.util.Log;
 
 import com.googlecode.tesseract.android.TessBaseAPI;
@@ -12,13 +13,13 @@ import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
 import ch.zuehlke.arscrabble.EnhancedTileImage;
-import ch.zuehlke.arscrabble.ImageTargetsActivity;
 import ch.zuehlke.arscrabble.TrackerCorners;
 
 import static ch.zuehlke.arscrabble.VectorUtils.vecToPoint;
@@ -47,17 +48,18 @@ public class BoardDetection {
     private static final String LOGTAG_OCR = LOGTAG + "(OCR)";
     public static final int MINIMAL_OCR_CONFIDENCE = 70;
 
-    private final ImageTargetsActivity imageTargetsActivity;
-    private final TessBaseAPI tessBaseAPI;
+    private final BoardDetectionDebugCallback boardDetectionDebugCallback;
+    private TessBaseAPI tessBaseAPI;
     private int frameCounter;
 
     private int singleSegmentX = 0;
     private int singleSegmentY = 0;
 
-    public BoardDetection(ImageTargetsActivity imageTargetsActivity, TessBaseAPI tessBaseAPI) {
+    public BoardDetection(BoardDetectionDebugCallback imageTargetsActivity) {
 
-        this.imageTargetsActivity = imageTargetsActivity;
+        this.boardDetectionDebugCallback = imageTargetsActivity;
         this.tessBaseAPI = tessBaseAPI;
+        initializeTesseract();
     }
 
     public void detectBoard(byte[] pixelArray, int imageWidth, int imageHeight, TrackerCorners corners) {
@@ -69,7 +71,7 @@ public class BoardDetection {
 
         boolean drawCircles = true;
         boolean rectify = true;
-        boolean sharpen = true;
+        boolean sharpen = false;
         boolean drawBorder = false;
         boolean drawSegmentationLines = rectify && true;
         boolean debugSomeSegments = rectify && true;
@@ -91,7 +93,7 @@ public class BoardDetection {
                 drawCornerCircles(imageMat, red, green, blue, yellow, cyan, center, upperLeft, upperRight, lowerLeft, lowerRight);
             }
 
-            imageTargetsActivity.putMatOnLiveImageView(imageMat);
+            boardDetectionDebugCallback.putMatOnLiveImageView(imageMat);
 
             boolean computationFrame;
             if (frameCounter < 5) {
@@ -115,7 +117,7 @@ public class BoardDetection {
                 if (sharpen) {
                     Mat blur = new Mat();
                     GaussianBlur(imageMat, blur, new Size(0, 0), 3);
-                    addWeighted(imageMat, 1.5, blur, -0.5, 0, blur);
+                    addWeighted(imageMat, 1.5, blur, -0.5, 0, imageMat);
                 }
 
                 final ScrabbleBoardSegmenter scrabbleBoardSegmenter = new ScrabbleBoardSegmenter(imageMat);
@@ -125,19 +127,28 @@ public class BoardDetection {
                 }
 
                 if (debugSomeSegments) {
-                    Mat scrabbleTile = scrabbleBoardSegmenter.getScrabbleTile(imageMat, 1, 1);
+
+                    boardDetectionDebugCallback.setOCRTextView("");
+                    boardDetectionDebugCallback.setDivTextView("");
+                    Mat scrabbleTile = scrabbleBoardSegmenter.getScrabbleTile(imageMat, singleSegmentX, singleSegmentY);
                     final EnhancedTileImage tileImage = enhanceTileImage(scrabbleTile, false);
-                    final Mat thresholdedTileImage = tileImage.getTileImage();
+                    if (tileImage.isScrabbleTileProbable()) {
+                        final Mat thresholdedTileImage = tileImage.getTileImage();
 
-                    final CroppedTileAndBoundingBox croppedTileAndBoundingBox = cropTileImageByContourOfLargestBlob(thresholdedTileImage);
-                    final Rect boundingBoxInInputImage = croppedTileAndBoundingBox.getBoundingBoxInInputImage();
+                        final CroppedTileAndBoundingBox croppedTileAndBoundingBox = cropTileImageByContourOfLargestBlob(thresholdedTileImage);
+                        final Rect boundingBoxInInputImage = croppedTileAndBoundingBox.getBoundingBoxInInputImage();
 
-                    drawContours(scrabbleTile, Arrays.asList(croppedTileAndBoundingBox.getMaxContour()), -1, new Scalar(0, 255, 0));
-                    rectangle(scrabbleTile, boundingBoxInInputImage.tl(), boundingBoxInInputImage.br(), new Scalar(255, 0, 0));
+                        drawContours(scrabbleTile, Arrays.asList(croppedTileAndBoundingBox.getMaxContour()), -1, new Scalar(0, 255, 0));
+                        rectangle(scrabbleTile, boundingBoxInInputImage.tl(), boundingBoxInInputImage.br(), new Scalar(255, 0, 0));
 
-                    imageTargetsActivity.putMatOnSegmentImageView(scrabbleTile);
+                        boardDetectionDebugCallback.putMatOnSegment2ImageView(croppedTileAndBoundingBox.getCroppedTile());
 
-                    performOCR(croppedTileAndBoundingBox.getCroppedTile(), true);
+                        performOCR(croppedTileAndBoundingBox.getCroppedTile(), true);
+                    } else {
+                        boardDetectionDebugCallback.putMatOnSegment2ImageView(imageMat);
+                    }
+                    boardDetectionDebugCallback.putMatOnSegment1ImageView(scrabbleTile);
+
                     singleSegmentX++;
 
                     if (singleSegmentX == 3) {
@@ -159,7 +170,7 @@ public class BoardDetection {
 
 
                 Mat toDraw = imageMat;
-                imageTargetsActivity.putMatOnProcessedImageView(imageMat);
+                boardDetectionDebugCallback.putMatOnProcessedImageView(imageMat);
                 logElapsedTime("total computation took: ", tic);
             }
 
@@ -174,6 +185,7 @@ public class BoardDetection {
     public CroppedTileAndBoundingBox cropTileImageByContourOfLargestBlob(Mat inputImage) {
 
         Mat dilatedInput = new Mat();
+
         dilate(inputImage, dilatedInput, new Mat());
 
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
@@ -181,6 +193,9 @@ public class BoardDetection {
         Mat mHierarchy = new Mat();
         findContours(dilatedInput, contours, mHierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
+        if (contours.isEmpty()) {
+            return new CroppedTileAndBoundingBox(inputImage, new Rect(0, 0, inputImage.cols(), inputImage.rows()), new MatOfPoint());
+        }
         // Find max contour area
         double maxArea = 0;
         Iterator<MatOfPoint> each = contours.iterator();
@@ -193,7 +208,10 @@ public class BoardDetection {
                 maxContour = wrapper;
             }
         }
-        final Point[] points = maxContour.toArray();
+
+        if (maxContour == null) {
+            return new CroppedTileAndBoundingBox(inputImage, new Rect(0, 0, inputImage.cols(), inputImage.rows()), new MatOfPoint());
+        }
 
 
         final Rect boundingBoxInInputImage = boundingRect(maxContour);
@@ -223,7 +241,7 @@ public class BoardDetection {
                 }
             }
         }
-        imageTargetsActivity.setDivTextView(allLetters);
+        boardDetectionDebugCallback.setDivTextView(allLetters);
         Log.d(LOGTAG_OCR, "scanScrabbleBoard in " + (System.currentTimeMillis() - tic) + "ms");
 
     }
@@ -231,10 +249,9 @@ public class BoardDetection {
     public OCRResult performOCR(Mat processedTile, boolean debug) {
         OCRResult ocrResult;
 
-
         ocrResult = callTeseract(processedTile);
         if (debug) {
-            imageTargetsActivity.setOCRTextView("(" + singleSegmentX + "," + singleSegmentY + ")=" + ocrResult.toString());
+            boardDetectionDebugCallback.setOCRTextView("(" + singleSegmentX + "," + singleSegmentY + ")=" + ocrResult.toString());
         }
         return ocrResult;
     }
@@ -268,14 +285,19 @@ public class BoardDetection {
         final Mat grayscale = new Mat();
         cvtColor(scrabbleTile, grayscale, COLOR_RGB2GRAY);
 
-        final Scalar meanGrayscale = mean(grayscale);
+        Mat blur = new Mat();
+        Mat sharpened = new Mat();
+        GaussianBlur(grayscale, blur, new Size(0, 0), 3);
+        addWeighted(grayscale, 1.5, blur, -0.5, 0, sharpened);
+
+        final Scalar meanGrayscale = mean(sharpened);
 
         if (meanGrayscale.val[0] < 200.f) {
             return EnhancedTileImage.createNoTilePresent();
         }
 
         final Mat threshold = new Mat();
-        threshold(grayscale, threshold, 200, 255, THRESH_BINARY_INV);
+        threshold(sharpened, threshold, 150, 255, THRESH_BINARY_INV);
         return EnhancedTileImage.createTilePresent(threshold);
     }
 
@@ -298,4 +320,31 @@ public class BoardDetection {
         return imageMat;
     }
 
+    private void initializeTesseract() {
+        tessBaseAPI = new TessBaseAPI();
+        tessBaseAPI.setDebug(false);
+        String path = Environment.getExternalStorageDirectory().getPath() + "/tesseract/";
+        final boolean exists = new File(path + "tessdata").exists();
+        tessBaseAPI.init(path, "eng", TessBaseAPI.OEM_TESSERACT_ONLY);
+        tessBaseAPI.setPageSegMode(TessBaseAPI.PageSegMode.PSM_SINGLE_CHAR);
+        tessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "ABCDEFGHIJKLMNOPQRSTUVWXYZi");
+    }
+
+    public void destroy() {
+        tessBaseAPI.end();
+    }
+
+    public interface BoardDetectionDebugCallback {
+        void putMatOnLiveImageView(Mat imageMat);
+
+        void putMatOnSegment1ImageView(Mat imageMat);
+
+        void putMatOnSegment2ImageView(Mat imageMat);
+
+        void putMatOnProcessedImageView(Mat imageMat);
+
+        void setDivTextView(String s);
+
+        void setOCRTextView(String s);
+    }
 }

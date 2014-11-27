@@ -19,7 +19,7 @@ public class ScrabbleBoardMetrics {
     public static final int BOTTOM_CORRECTION = 0;
     public static final int RIGHT_CORRECTION = -4;
     public static final int LEFT_CORRECTION = -2;
-    public static final float WIDTH_CORRECTION = 0.3f;
+    public static final float WIDTH_CORRECTION = 0.35f;
     public static final float HEIGHT_CORRECTION = 0.45f;
     private final float cols;
     private final float rows;

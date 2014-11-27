@@ -14,7 +14,6 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -26,7 +25,6 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.googlecode.tesseract.android.TessBaseAPI;
 import com.qualcomm.vuforia.CameraDevice;
 import com.qualcomm.vuforia.DataSet;
 import com.qualcomm.vuforia.Frame;
@@ -44,7 +42,6 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Vector;
@@ -55,7 +52,7 @@ import ch.zuehlke.arscrabble.vuforiautils.Texture;
 import static ch.zuehlke.arscrabble.VectorUtils.calcCorners;
 
 
-public class ImageTargetsActivity extends Activity implements ApplicationControl {
+public class ImageTargetsActivity extends Activity implements ApplicationControl, BoardDetection.BoardDetectionDebugCallback {
     private static final String LOGTAG = "ImageTargets";
     private static final String LOGTAG_OCR = "ImageTargets(OCR)";
 
@@ -91,14 +88,15 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
     private Bitmap processedBitmap;
     private Bitmap liveBitmap;
-    private Bitmap segmentBitmap;
+    private Bitmap segment1Bitmap;
+    private Bitmap segment2Bitmap;
     private ImageView liveImageView;
     private ImageView processedImageView;
-    private ImageView segmentImageView;
+    private ImageView segment1ImageView;
+    private ImageView segment2ImageView;
     private TextView ocrTextView;
     private TextView divTextView;
     private BoardDetection boardDetection;
-    private TessBaseAPI tessBaseAPI;
 
 
     // Called when the activity first starts or the user navigates back to an
@@ -110,7 +108,8 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         setContentView(R.layout.activity_imageproc);
         liveImageView = (ImageView) findViewById(R.id.live);
         processedImageView = (ImageView) findViewById(R.id.processed);
-        segmentImageView = (ImageView) findViewById(R.id.segment);
+        segment1ImageView = (ImageView) findViewById(R.id.segment1);
+        segment2ImageView = (ImageView) findViewById(R.id.segment2);
         ocrTextView = (TextView) findViewById(R.id.ocr);
         divTextView = (TextView) findViewById(R.id.div);
 
@@ -131,9 +130,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
         mIsDroidDevice = android.os.Build.MODEL.toLowerCase().startsWith("droid");
 
-        initializeTesseract();
-
-        boardDetection = new BoardDetection(this, tessBaseAPI);
+        boardDetection = new BoardDetection(this);
 
     }
 
@@ -154,23 +151,34 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
     }
 
+    @Override
     public void putMatOnProcessedImageView(Mat imageMat) {
         putMatOnImageView(imageMat, processedBitmap, processedImageView);
     }
 
-    public void putMatOnSegmentImageView(Mat tileImage) {
-        putMatOnImageView(tileImage, segmentBitmap, segmentImageView);
+    @Override
+    public void putMatOnSegment1ImageView(Mat imageMat) {
+        putMatOnImageView(imageMat, segment2Bitmap, segment2ImageView);
     }
 
+    @Override
+    public void putMatOnSegment2ImageView(Mat imageMat) {
+        putMatOnImageView(imageMat, segment1Bitmap, segment1ImageView);
+
+    }
+
+    @Override
     public void setOCRTextView(String s) {
 
         ocrTextView.setText(s);
     }
 
+    @Override
     public void setDivTextView(String s) {
 
         divTextView.setText(s);
     }
+
 
     // Process Single Tap event to trigger autofocus
     private class GestureListener extends
@@ -289,8 +297,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     protected void onDestroy() {
         Log.d(LOGTAG, "onDestroy");
         super.onDestroy();
-
-        tessBaseAPI.end();
+        boardDetection.destroy();
 
         try {
             vuforiaAppSession.stopAR();
@@ -570,13 +577,4 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
     }
 
-    private void initializeTesseract() {
-        tessBaseAPI = new TessBaseAPI();
-        tessBaseAPI.setDebug(false);
-        String path = Environment.getExternalStorageDirectory().getPath() + "/tesseract/";
-        final boolean exists = new File(path + "tessdata").exists();
-        tessBaseAPI.init(path, "eng", TessBaseAPI.OEM_TESSERACT_ONLY);
-        tessBaseAPI.setPageSegMode(TessBaseAPI.PageSegMode.PSM_SINGLE_CHAR);
-        tessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "ABCDEFGHIJKLMNOPQRSTUVWXYZi");
-    }
 }
