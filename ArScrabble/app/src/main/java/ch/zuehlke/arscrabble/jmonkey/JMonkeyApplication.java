@@ -36,11 +36,8 @@ import com.qualcomm.vuforia.VideoMode;
 import com.qualcomm.vuforia.Vuforia;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import ch.zuehlke.arscrabble.model.Board;
-import ch.zuehlke.arscrabble.model.Letter;
 import ch.zuehlke.arscrabble.vuforiautils.SampleMath;
 
 /**
@@ -121,12 +118,6 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         isModelAdded = false;
     }
 
-    private ArrayList<Spatial> virtualStones = new ArrayList<Spatial>();
-
-//    private Spatial createStone(){
-//
-//    }
-
     private void initForegroundScene() {
         // Load a model from test_data (OgreXML + material + texture)
         stone = assetManager.loadModel("Models/Stone/stone_u.obj");
@@ -174,7 +165,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
 
         // Get Board
         Board board = new Board();
-        board.placeLetterStone(Letter.U,1,1);
+        //board.placeLetterStone(Letter.U,1,1);
 
         drawBoard(board);
 
@@ -189,6 +180,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     }
 
     private void drawBoard(Board board) {
+
     }
 
     private void initBackground() {

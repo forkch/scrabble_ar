@@ -1,17 +1,18 @@
 package ch.zuehlke.arscrabble.model.fields;
 
 import ch.zuehlke.arscrabble.model.Letter;
-import ch.zuehlke.arscrabble.model.LetterType;
+import ch.zuehlke.arscrabble.model.Stone;
+import ch.zuehlke.arscrabble.model.StoneType;
 
 /**
  * Created by chsueess on 25.11.14.
  */
 public class SimpleField {
-    private Letter letter;
-    private LetterType letterType;
+    private Stone stone;
+    private StoneType stoneType;
 
     public int calculatePoints() {
-        return letter.getPoints();
+        return getLetter().getPoints();
     }
 
     public int getWordPointsMultiplier() {
@@ -19,15 +20,15 @@ public class SimpleField {
     }
 
     public void paint() {
-        System.out.print(letter == null ? "x" : letter);
+        System.out.print(getLetter() == null ? "x" : getLetter());
     }
 
     public Letter getLetter() {
-        return letter;
+        return stone.getLetter();
     }
 
-    public void setLetter(Letter letter) {
-        this.letter = letter;
+    public void setStone(Stone stone) {
+        this.stone = stone;
     }
 
 }

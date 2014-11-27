@@ -33,8 +33,11 @@ public class Board {
         board.paint();
     }
 
-    public void placeLetterStone(Letter letter, int x, int y) {
-        board[x][y].setLetter(letter);
+    public void placeVirtualStone(Stone stone, int x, int y) {
+        if(stone.getType() == StoneType.VIRTUAL) {
+            throw new RuntimeException("Call Harry Potter for placing physical stones on the board...idiot!");
+        }
+        board[x][y].setStone(stone);
     }
 
     public void initialize(String[][] boardTemplate) {
