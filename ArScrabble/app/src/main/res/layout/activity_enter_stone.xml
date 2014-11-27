@@ -33,6 +33,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="14dp"
+            android:inputType="textCapCharacters"
             android:id="@+id/editTextPlayer1" />
 
         <TextView
@@ -45,6 +46,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="14dp"
+            android:inputType="textCapCharacters"
             android:id="@+id/editTextPlayer2" />
 
         <TextView
@@ -57,6 +59,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="14dp"
+            android:inputType="textCapCharacters"
             android:id="@+id/editTextPlayer3" />
 
         <TextView
@@ -69,6 +72,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="14dp"
+            android:inputType="textCapCharacters"
             android:id="@+id/editTextPlayer4" />
 
     </LinearLayout>

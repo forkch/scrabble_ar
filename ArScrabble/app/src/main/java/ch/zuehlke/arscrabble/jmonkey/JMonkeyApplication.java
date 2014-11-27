@@ -69,27 +69,41 @@ public class JMonkeyApplication extends SimpleApplication {
     private DataSet mCurrentDataset;
     private HashMap<VirtualStone, Spatial> virtualStones = new HashMap<VirtualStone, Spatial>();
     private ScrabbleBoardMetrics metrics;
-    private Player stefan;
     private ScrabbleSolver scrabbleSolver;
 
     private boolean isBoardTracked;
     private boolean isBoardVisible;
+    private ScrabbleUI ui;
+    private Scrabble game;
 
     public void roundFinished() {
 
     }
 
     public void startGame(HashMap<String, String> players) {
-        Scrabble game = new Scrabble();
+        game = new Scrabble();
 
-//        for (Map.Entry<String, String> playerInfo : players.entrySet()) {
-//            Player player = new Player(playerInfo.getKey(), new Rack(getStones(playerInfo.getValue(), game.getStoneBag())));
-//            game.addPlayer(player);
-//        }
+        for (Map.Entry<String, String> playerInfo : players.entrySet()) {
+            Player player = new Player(playerInfo.getKey(), new Rack(getStones(playerInfo.getValue(), game.getStoneBag())));
+            game.addPlayer(player);
+        }
 
-        //game.start();
+        game.start();
 
         scrabbleSolver = new ScrabbleSolver(game);
+
+        updateActivePlayer();
+    }
+
+    private void updateActivePlayer() {
+        Player activePlayer = game.getActivePlayer();
+        ui.UpdatePlayer(activePlayer.getName());
+        List<Stone> stones = activePlayer.getRack().getStones();
+        String remainingStones = "";
+        for (Stone stone : stones) {
+            remainingStones += stone.getLetter().getValue();
+        }
+        ui.UpdatePlayerStones(remainingStones);
     }
 
     @Override
@@ -111,10 +125,9 @@ public class JMonkeyApplication extends SimpleApplication {
     private static List<Stone> getStones(String stoneDefinition, StoneBag stoneBag) {
 
         List<Stone> stones = new ArrayList<Stone>();
-        String[] stoneParts = stoneDefinition.split(",");
-        for (String stone : stoneParts) {
-            stone = stone.trim().toUpperCase();
-            stones.add(stoneBag.pop(Letter.valueOf(stone)));
+        char[] stoneParts = stoneDefinition.toCharArray();
+        for (char stone : stoneParts) {
+            stones.add(stoneBag.pop(Letter.valueOf(stone + "".toUpperCase())));
         }
 
         return stones;
@@ -227,7 +240,7 @@ public class JMonkeyApplication extends SimpleApplication {
 
         if (scrabbleSolver != null) {
 
-            List<VirtualStone> allVirtualStones = scrabbleSolver.getWord(stefan);
+            List<VirtualStone> allVirtualStones = scrabbleSolver.getWord(game.getActivePlayer());
 
             removeNotExistingStones(allVirtualStones);
             addNewStones(allVirtualStones);
@@ -502,5 +515,9 @@ public class JMonkeyApplication extends SimpleApplication {
         if (imageTracker != null) {
             imageTracker.start();
         }
+    }
+
+    public void setUI(ScrabbleUI ui) {
+        this.ui = ui;
     }
 }
