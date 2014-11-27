@@ -18,7 +18,7 @@ public class SimpleField {
     }
 
     public void paint() {
-        System.out.print(getLetter() == null ? "x" : getLetter());
+        System.out.print(getLetter() == null ? "|   " : "| " + getLetter() + " ");
     }
 
     public Letter getLetter() {
@@ -32,4 +32,9 @@ public class SimpleField {
     public Stone getStone(){
         return stone;
     }
+
+    public boolean hasStone() {
+        return stone != null;
+    }
+
 }
