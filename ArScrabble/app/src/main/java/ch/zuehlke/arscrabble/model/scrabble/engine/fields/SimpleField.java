@@ -1,8 +1,8 @@
-package ch.zuehlke.arscrabble.model.fields;
+package ch.zuehlke.arscrabble.model.scrabble.engine.fields;
 
-import ch.zuehlke.arscrabble.model.Letter;
-import ch.zuehlke.arscrabble.model.Stone;
-import ch.zuehlke.arscrabble.model.StoneType;
+import ch.zuehlke.arscrabble.model.scrabble.engine.Letter;
+import ch.zuehlke.arscrabble.model.scrabble.engine.Stone;
+import ch.zuehlke.arscrabble.model.scrabble.engine.StoneType;
 
 /**
  * Created by chsueess on 25.11.14.
@@ -24,7 +24,7 @@ public class SimpleField {
     }
 
     public Letter getLetter() {
-        return stone.getLetter();
+        return (stone == null) ? null : stone.getLetter();
     }
 
     public void setStone(Stone stone) {
