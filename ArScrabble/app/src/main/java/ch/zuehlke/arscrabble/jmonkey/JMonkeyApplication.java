@@ -35,12 +35,16 @@ import com.qualcomm.vuforia.VideoBackgroundConfig;
 import com.qualcomm.vuforia.VideoMode;
 import com.qualcomm.vuforia.Vuforia;
 
+import org.opencv.android.OpenCVLoader;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 
+import ch.zuehlke.arscrabble.ScrabbleBoardMetrics;
 import ch.zuehlke.arscrabble.model.Board;
-import ch.zuehlke.arscrabble.model.Letter;
 import ch.zuehlke.arscrabble.vuforiautils.SampleMath;
 
 /**
@@ -56,14 +60,14 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     private Camera backgroundCamera;
     private Camera foregroundCamera;
     private DataSet mCurrentDataset;
-    private Spatial stone;
-
-    private boolean isModelAdded = false;
+    private HashMap<String, Spatial> virtualStones = new HashMap<String, Spatial>();
 
     @Override
     public void simpleInitApp() {
         // We use custom viewports - so the main viewport does not need to contain the rootNode
         viewPort.detachScene(rootNode);
+
+        OpenCVLoader.initDebug(false);
 
         initTrackers();
         initDeviceCamera();
@@ -110,32 +114,15 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         return config;
     }
 
-    private void addModel() {
-
-        rootNode.attachChild(stone);
-        isModelAdded = true;
+    private Spatial createStone() {
+        Spatial stone = assetManager.loadModel("Models/Stone/stone_u.obj");
+        stone.rotate((float) (Math.PI / 2), 0, (float) Math.PI);
+        stone.scale(0.26f);
+        return stone;
     }
-
-    private void removeModel() {
-        rootNode.detachChild(stone);
-        isModelAdded = false;
-    }
-
-    private ArrayList<Spatial> virtualStones = new ArrayList<Spatial>();
-
-//    private Spatial createStone(){
-//
-//    }
 
     private void initForegroundScene() {
-        // Load a model from test_data (OgreXML + material + texture)
-        stone = assetManager.loadModel("Models/Stone/stone_u.obj");
-        stone.rotate((float) (Math.PI / 2), 0, (float) Math.PI);
-
-        stone.scale(0.1f);
-        stone.move(-50, 50, 0);
-
-        // You must add a light to make the model visible
+        // Add light from every side
         addLight(ColorRGBA.White, -1, 0, 0);
         addLight(ColorRGBA.White, 0, -1, 0);
         addLight(ColorRGBA.White, 0, 0, -1);
@@ -144,10 +131,6 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         addLight(ColorRGBA.White, 0, 0, 1);
 
         foregroundCamera = new Camera(settings.getWidth(), settings.getHeight());
-
-        int aspect = settings.getWidth() / settings.getHeight();
-        // TODO: Wtf is a frustum?
-        foregroundCamera.setFrustumPerspective(50, aspect, 1, 1000);
         ViewPort foregroundViewPort = renderManager.createMainView("ForegroundView", foregroundCamera);
         foregroundViewPort.attachScene(rootNode);
         foregroundViewPort.setClearFlags(false, true, false);
@@ -169,15 +152,24 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
 
     @Override
     public void simpleUpdate(float tpf) {
-
         updateTracking();
+        updateBoard();
+        updateBackgroundVideo(tpf);
+    }
 
-        // Get Board
+    private void updateBoard() {
+        // Get all stones to be drawn virtually
         Board board = new Board();
-        board.placeLetterStone(Letter.U,1,1);
 
-        drawBoard(board);
+        // Which stones have to be removed?
 
+
+        // Which stones are new and have to be added?
+
+
+    }
+
+    private void updateBackgroundVideo(float tpf) {
         if (hasBackgroundImage) {
             backgroundCameraTexture.setImage(backgroundCameraImage);
             backgroundCameraMaterial.setTexture("ColorMap", backgroundCameraTexture);
@@ -188,7 +180,77 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         backgroundCameraGeometry.updateGeometricState();
     }
 
-    private void drawBoard(Board board) {
+    private ScrabbleBoardMetrics metrics;
+
+//    private void drawBoard(Board board) {
+//
+//        // TODO: Search better place for metrics init XD
+//        if (metrics == null) {
+//            return;
+//        }
+//
+//        // Remove old virtual stones from screen
+//        for (Spatial stone : virtualStones) {
+//            rootNode.detachChild(stone);
+//        }
+//
+//        virtualStones.clear();
+//
+//
+//        Spatial stone = createStone();
+//        moveToField(stone, 1, 1);
+//        rootNode.attachChild(stone);
+//        virtualStones.add(stone);
+//
+//        Spatial stone2 = createStone();
+//        moveToField(stone2, 15, 1);
+//        rootNode.attachChild(stone2);
+//        virtualStones.add(stone2);
+//
+//        Spatial stone3 = createStone();
+//        moveToField(stone3, 1, 15);
+//        rootNode.attachChild(stone3);
+//        virtualStones.add(stone3);
+//
+//        Spatial stone4 = createStone();
+//        moveToField(stone4, 15, 15);
+//        rootNode.attachChild(stone4);
+//        virtualStones.add(stone4);
+//
+//        Spatial stoneCenter = createStone();
+//        moveToField(stoneCenter, 8, 8);
+//        rootNode.attachChild(stoneCenter);
+//        virtualStones.add(stoneCenter);
+//
+////        for (int i = 1; i <= 1; i++) {
+////            for (int j = 1; j <= 15; j++) {
+////                Spatial stone = createStone();
+////                moveToField(stone, i, j);
+////                rootNode.attachChild(stone);
+////                virtualStones.add(stone);
+////            }
+////        }
+//    }
+
+    private void moveToField(Spatial stone, int x, int y) {
+
+        // Initial stone position -> x = 8 / y = 8
+        x = x - 8;
+        y = (y - 8) * -1;
+
+        int lineWidth = 5;
+
+        int totalWidth = metrics.getCellWidth() * 15 + metrics.getMarginLeft() + metrics.getMarginRight();
+        float multiplicator = 100.0f / totalWidth;
+
+        // Move stone to center (H8)
+        float moveVerticalCenter = 0.5f * metrics.getCellHeight();
+
+        // Move stone to position(XY)
+        float moveHorizontal = (x * metrics.getCellWidth() + lineWidth * x) * multiplicator;
+        float moveVertical = ((y * metrics.getCellHeight() + lineWidth * y) + moveVerticalCenter) * multiplicator;
+
+        stone.move(moveHorizontal, moveVertical, 0);
     }
 
     private void initBackground() {
@@ -252,6 +314,9 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
             backgroundCameraImage.setData(backgroundImageBuffer);
 
             hasBackgroundImage = true;
+
+            Mat imageMat = Mat.zeros(image.getHeight(), image.getWidth(), CvType.CV_8UC3);
+            metrics = new ScrabbleBoardMetrics(imageMat);
         }
     }
 
@@ -270,12 +335,6 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     private void updateTracking() {
         State currentState = Renderer.getInstance().begin();
         int numberOfTrackableResults = currentState.getNumTrackableResults();
-
-        if (numberOfTrackableResults == 0 && isModelAdded) {
-            removeModel();
-        } else if (numberOfTrackableResults > 0 && !isModelAdded) {
-            addModel();
-        }
 
         for (int tIdx = 0; tIdx < numberOfTrackableResults; tIdx++) {
             TrackableResult result = currentState.getTrackableResult(tIdx);
