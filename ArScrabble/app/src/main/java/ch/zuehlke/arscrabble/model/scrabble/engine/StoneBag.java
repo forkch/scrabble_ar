@@ -6,6 +6,6 @@ package ch.zuehlke.arscrabble.model.scrabble.engine;
 public class StoneBag {
     // TODO Limit stones to the real amount of each!
     public Stone pop(Letter letter) {
-        return new Stone(letter, StoneType.PHYSICAL);
+        return new Stone(letter);
     }
 }

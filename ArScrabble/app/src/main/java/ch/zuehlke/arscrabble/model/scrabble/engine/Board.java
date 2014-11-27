@@ -38,10 +38,7 @@ public class Board {
         return board;
     }
 
-    public void placeVirtualStone(Stone stone, int x, int y) {
-        if(stone.getType() == StoneType.VIRTUAL) {
-            throw new RuntimeException("Call Harry Potter for placing physical stones on the board...idiot!");
-        }
+    public void placeStone(Stone stone, int x, int y) {
         board[x][y].setStone(stone);
     }
 

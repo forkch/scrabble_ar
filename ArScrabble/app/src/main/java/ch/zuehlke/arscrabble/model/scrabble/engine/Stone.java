@@ -5,18 +5,12 @@ package ch.zuehlke.arscrabble.model.scrabble.engine;
  */
 public class Stone {
     private Letter letter;
-    private StoneType type;
 
-    public Stone(Letter letter, StoneType type) {
+    public Stone(Letter letter) {
         this.letter = letter;
-        this.type = type;
     }
 
     public Letter getLetter() {
         return letter;
-    }
-
-    public StoneType getType() {
-        return type;
     }
 }

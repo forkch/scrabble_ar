@@ -15,4 +15,30 @@ public class VirtualStone {
         this.x = x;
         this.y = y;
     }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public int hashCode() {
+        return (x + "_" + y + "_" + stone.getLetter()).hashCode();
+    }
+
+    public boolean equals(Object obj) {
+
+        if (this == obj) {
+            return true;
+        }
+
+        if (obj instanceof VirtualStone) {
+            VirtualStone virtualStone = (VirtualStone) obj;
+            return x == virtualStone.x && y == virtualStone.y && stone.getLetter() == virtualStone.stone.getLetter();
+        }
+
+        return false;
+    }
 }
