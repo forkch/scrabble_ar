@@ -18,6 +18,13 @@ public class ScrabbleSample {
         
         game.start();
 
+//        game.placeStone(x,y, Letter.M);
+//        game.placeStone(x,y, Letter.M);
+//        game.placeStone(x,y, Letter.X);
+//        game.placeStone(x,y, Letter.M);
+//
+//        game.finishRound();
+
         game.placeWord(new Word(7, 5, Direction.DOWN, Letter.M, Letter.A, Letter.U, Letter.S));
 
         game.placeWord(new Word(7, 10, Direction.DOWN, Letter.H, Letter.O, Letter.S, Letter.T));

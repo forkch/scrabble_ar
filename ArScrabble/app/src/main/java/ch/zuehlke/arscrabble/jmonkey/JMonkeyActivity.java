@@ -3,15 +3,19 @@ package ch.zuehlke.arscrabble.jmonkey;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 
 import com.jme3.app.AndroidHarness;
 import com.jme3.system.android.AndroidConfigChooser;
 import com.qualcomm.vuforia.Vuforia;
 
 import java.util.HashMap;
+
+import ch.zuehlke.arscrabble.R;
 
 public class JMonkeyActivity extends AndroidHarness {
 
@@ -30,7 +34,13 @@ public class JMonkeyActivity extends AndroidHarness {
         Vuforia.setInitParameters(this, Vuforia.GL_20);
         Vuforia.init();
 
-        Button btn = new Button(this);
+        LayoutInflater li = LayoutInflater.from(this);
+        RelativeLayout layout = (RelativeLayout)li.inflate(R.layout.activity_jmonkey, null);
+
+        addContentView(layout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+
+        Button btn = (Button)findViewById(R.id.finishRoundButton);
         btn.setText("Spielzug abgeschlossen");
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -38,8 +48,6 @@ public class JMonkeyActivity extends AndroidHarness {
                 getJMonkeyApplication().roundFinished();
             }
         });
-
-        addContentView(btn, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         HashMap<String, String> players = new HashMap<String, String>();
         Intent intent = getIntent();
