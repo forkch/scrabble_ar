@@ -21,6 +21,8 @@ public class ScrabbleBoardMetrics {
     public static final int LEFT_CORRECTION = -2;
     public static final float WIDTH_CORRECTION = 0.3f;
     public static final float HEIGHT_CORRECTION = 0.45f;
+    private final float cols;
+    private final float rows;
 
     private int marginLeft = 44;
     private int marginRight = 44;
@@ -34,6 +36,8 @@ public class ScrabbleBoardMetrics {
     }
 
     public ScrabbleBoardMetrics(float cols, float rows) {
+        this.cols = cols;
+        this.rows = rows;
         marginLeft = (int) (cols * marginLeftPercent + LEFT_CORRECTION);
         marginRight = (int) (cols * marginRightPercent + RIGHT_CORRECTION);
         marginTop = (int) (rows * marginTopPercent + TOP_CORRECTION);
@@ -78,5 +82,19 @@ public class ScrabbleBoardMetrics {
         return cellHeight;
     }
 
+    public float getX(int verticalIdx) {
+        final float x = this.getMarginLeft() + verticalIdx * this.getCellWidth() + verticalIdx * ScrabbleBoardMetrics.WIDTH_CORRECTION;
+        if (x < 0 || x > cols)
+            throw new IllegalStateException("x out of bounds: " + x);
+        return x;
+    }
+
+    public float getY(int horizontalIdx) {
+        final float y = this.getMarginTop() + horizontalIdx * this.getCellHeight() + horizontalIdx * ScrabbleBoardMetrics.HEIGHT_CORRECTION;
+
+        if (y < 0 || y > rows)
+            throw new IllegalStateException("y out of bounds: " + y);
+        return y;
+    }
 
 }

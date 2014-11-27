@@ -32,7 +32,7 @@ public class ScrabbleBoardSegmenter {
                 boundary, lineThickness);
 
         for (int verticalIdx = 0; verticalIdx < 16; verticalIdx++) {
-            float x = getX(metrics, verticalIdx);
+            float x = metrics.getX(verticalIdx);
             Core.line(image,
                     new Point(x, metrics.getMarginTop()),
                     new Point(x, image.rows() - metrics.getMarginBottom()),
@@ -40,7 +40,7 @@ public class ScrabbleBoardSegmenter {
         }
 
         for (int horizontalIdx = 0; horizontalIdx < 16; horizontalIdx++) {
-            float y = getY(metrics, horizontalIdx);
+            float y = metrics.getY(horizontalIdx);
             Core.line(image,
                     new Point(metrics.getMarginLeft(), y),
                     new Point(image.cols() - metrics.getMarginRight(), y),
@@ -53,17 +53,17 @@ public class ScrabbleBoardSegmenter {
 
     public Mat getScrabbleTile(Mat image, int horizontalIdx, int verticalIdx) {
 
-        int x1 = (int) getX(metrics, horizontalIdx);
-        int y1 = (int) getY(metrics, verticalIdx);
+        int x1 = (int) metrics.getX(horizontalIdx);
+        int y1 = (int) metrics.getY(verticalIdx);
 
-        int x2 = (int) getX(metrics, horizontalIdx + 1);
-        int y2 = (int) getY(metrics, verticalIdx + 1);
+        int x2 = (int) metrics.getX(horizontalIdx + 1);
+        int y2 = (int) metrics.getY(verticalIdx + 1);
 
         final Mat scrabbleTile = new Mat();
 
         image.submat(y1, y2, x1, x2).copyTo(scrabbleTile);
 
-        maskPointNumber(scrabbleTile);
+        //maskPointNumber(scrabbleTile);
 
         return scrabbleTile;
     }
@@ -74,13 +74,6 @@ public class ScrabbleBoardSegmenter {
         Core.rectangle(scrabbleTile, upperRight, lowerRight, new Scalar(255, 255, 255), -1);
     }
 
-    private float getX(ScrabbleBoardMetrics metrics, int verticalIdx) {
-        return metrics.getMarginLeft() + verticalIdx * metrics.getCellWidth() + verticalIdx * ScrabbleBoardMetrics.WIDTH_CORRECTION;
-    }
-
-    private float getY(ScrabbleBoardMetrics metrics, int horizontalIdx) {
-        return metrics.getMarginTop() + horizontalIdx * metrics.getCellHeight() + horizontalIdx * ScrabbleBoardMetrics.HEIGHT_CORRECTION;
-    }
 
 
 }
