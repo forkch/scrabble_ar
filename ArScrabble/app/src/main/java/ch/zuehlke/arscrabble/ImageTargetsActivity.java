@@ -45,13 +45,17 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.Vector;
 
 import ch.zuehlke.arscrabble.vuforiautils.Texture;
@@ -62,6 +66,7 @@ import static ch.zuehlke.arscrabble.VectorUtils.vecToPoint;
 
 public class ImageTargetsActivity extends Activity implements ApplicationControl {
     private static final String LOGTAG = "ImageTargets";
+    public static final int MINIMAL_OCR_CONFIDENCE = 60;
 
     ApplicationSession vuforiaAppSession;
 
@@ -101,7 +106,10 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     private ImageView processedImageView;
     private ImageView segmentImageView;
     private TextView ocrTextView;
+    private TextView divTextView;
     private TessBaseAPI tessBaseAPI;
+    private int singleSegmentX = 0;
+    private int singleSegmentY = 0;
 
 
     // Called when the activity first starts or the user navigates back to an
@@ -115,6 +123,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         processedImageView = (ImageView) findViewById(R.id.processed);
         segmentImageView = (ImageView) findViewById(R.id.segment);
         ocrTextView = (TextView) findViewById(R.id.ocr);
+        divTextView = (TextView) findViewById(R.id.div);
 
         vuforiaAppSession = new ApplicationSession(this);
 
@@ -132,19 +141,10 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
         mIsDroidDevice = android.os.Build.MODEL.toLowerCase().startsWith("droid");
 
-        System.loadLibrary("tess");
-        System.loadLibrary("lept");
-
-        tessBaseAPI = new TessBaseAPI();
-        tessBaseAPI.setDebug(true);
-        String path = Environment.getExternalStorageDirectory().getPath() + "/tesseract/";
-        final boolean exists = new File(path + "tessdata").exists();
-        tessBaseAPI.init(path, "eng", TessBaseAPI.OEM_TESSERACT_CUBE_COMBINED);
-        tessBaseAPI.clear();
-        tessBaseAPI.setPageSegMode(TessBaseAPI.PageSegMode.PSM_SINGLE_CHAR);
-        tessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "ABCDEFGHIJKLMNOPQRSTUVWXYZi");
+        initializeTesseract();
 
     }
+
 
     // Process Single Tap event to trigger autofocus
     private class GestureListener extends
@@ -434,13 +434,12 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 }
             }
 
-
             boolean drawCircles = true;
             boolean rectify = true;
             boolean drawBorder = false;
-            boolean drawSegmentationLines = rectify && true;
+            boolean drawSegmentationLines = rectify && false;
             boolean segment = rectify && true;
-            boolean scanScrabbleBoard = rectify && true;
+            boolean scanScrabbleBoard = rectify && false;
 
             if (imageFromFrame != null) {
                 ByteBuffer pixels = imageFromFrame.getPixels();
@@ -494,9 +493,36 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                         Mat rectified = drawBorder(imageMat);
                     }
 
+//                    final Mat grayscale = new Mat();
+//                    imageMat = imageMat.submat(5, imageMat.rows()-5, 5, imageMat.cols()-5);
+//                    Imgproc.cvtColor(imageMat, grayscale, Imgproc.COLOR_RGB2GRAY);
+//                    Imgproc.Canny(imageMat, imageMat, 50, 50);
+//
+//
+//                    List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+//                    MatOfPoint hierarchy = new MatOfPoint();
+//                    Imgproc.findContours(grayscale, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE, new Point(5, 5));
+//
+//                    final Random random = new Random();
+//                    for (int i = 0; i < contours.size(); i++) {
+//                        Scalar color = new Scalar(random.nextInt(255), random.nextInt(255), random.nextInt(255));
+//                        Imgproc.drawContours(imageMat, contours, i, color, 2, 8, hierarchy, 0, new Point());
+//                    }
+
                     if (segment) {
-                        Mat scrabbleTile = ScrabbleBoardSegmentator.getScrabbleTile(imageMat, 3, 3, ScrabbleBoardMetrics.metricsFromImage(imageMat));
+                        Mat scrabbleTile = ScrabbleBoardSegmentator.getScrabbleTile(imageMat, singleSegmentX, singleSegmentY, ScrabbleBoardMetrics.metricsFromImage(imageMat));
                         performOCR(scrabbleTile, true);
+                        singleSegmentX++;
+
+                        if (singleSegmentX == 4) {
+                            singleSegmentX = 0;
+                            singleSegmentY++;
+                        }
+                        if (singleSegmentY == 4) {
+                            singleSegmentY = 0;
+                        }
+
+
                     }
 
                     if (scanScrabbleBoard) {
@@ -540,24 +566,45 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         for (int horizontalIdx = 0; horizontalIdx < 8; horizontalIdx++) {
             for (int verticalIdx = 0; verticalIdx < 8; verticalIdx++) {
                 final Mat scrabbleTile = ScrabbleBoardSegmentator.getScrabbleTile(image, horizontalIdx, verticalIdx, scrabbleBoardMetrics);
-                String character = performOCR(scrabbleTile, false);
-                Log.i(LOGTAG, "tile at (" + horizontalIdx + "," + verticalIdx + "): " + character);
+                OCRResult ocrResult = performOCR(scrabbleTile, false);
+                if (ocrResult.getConfidence() > MINIMAL_OCR_CONFIDENCE) {
+                    Log.i(LOGTAG, "tile at (" + horizontalIdx + "," + verticalIdx + "): " + ocrResult);
+                }
             }
         }
 
     }
 
-    public String performOCR(Mat scrabbleTile, boolean putInView) {
+    public OCRResult performOCR(Mat scrabbleTile, boolean debug) {
+        Mat processedTile = enhanceTileImage(scrabbleTile, debug);
+        OCRResult ocrResult;
+        if (processedTile != null) {
+            if (debug) {
+                putMatOnImageView(processedTile, segmentBitmap, segmentImageView);
+                ocrTextView.setText("");
+            }
 
-        Mat processedTile = enhanceTileImage(scrabbleTile);
-        if (putInView) {
-            putMatOnImageView(processedTile, segmentBitmap, segmentImageView);
+            long tic = System.currentTimeMillis();
+            ocrResult = callTeseract(processedTile);
+            Log.d(LOGTAG, "ocr in " + (System.currentTimeMillis() - tic) + "ms");
+        } else {
+            ocrResult = new OCRResult("", 0);
         }
+        if (debug) {
+            String character;
+            if (ocrResult.getConfidence() < 60) {
+                character = "-----";
+            } else {
+                character = ocrResult.getLetter();
+            }
+            ocrTextView.setText("(" + singleSegmentX + "," + singleSegmentY + ")=" + character);
+        }
+        return ocrResult;
+    }
 
-        ocrTextView.setText("");
+    public OCRResult callTeseract(Mat processedTile) {
+        long tic;
         try {
-            tessBaseAPI.setDebug(true);
-
             byte[] imageData = new byte[(int) (processedTile.cols() * processedTile.rows() *
                     processedTile.channels())];
 
@@ -565,26 +612,40 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
             tessBaseAPI.setImage(imageData, processedTile.cols(), processedTile.rows(), processedTile.channels(), processedTile.cols() * processedTile.channels());
 
-            long tic = System.currentTimeMillis();
+            tic = System.currentTimeMillis();
             String textResult = tessBaseAPI.getUTF8Text();
-            Log.d(LOGTAG, "ocr in " + (System.currentTimeMillis() - tic) + "ms");
-            if (putInView) {
-                ocrTextView.setText(textResult);
-            }
+            final int confidence = tessBaseAPI.meanConfidence();
             tessBaseAPI.clear();
-            return textResult;
+
+            if (confidence < 60) {
+                return new OCRResult("", 0);
+            }
+
+            return new OCRResult(textResult, confidence);
         } catch (Exception x) {
             Log.e(LOGTAG, "error", x);
-            return "";
+            return new OCRResult("", 0);
         }
     }
 
-    public Mat enhanceTileImage(Mat scrabbleTile) {
+    public Mat enhanceTileImage(Mat scrabbleTile, boolean debug) {
         int pixelsToRemove = 3;
         Mat cropped = scrabbleTile.submat(pixelsToRemove, scrabbleTile.rows() - pixelsToRemove, pixelsToRemove, scrabbleTile.cols() - pixelsToRemove);
 
+        final Scalar meanColor = Core.mean(cropped);
+
         final Mat grayscale = new Mat();
         Imgproc.cvtColor(cropped, grayscale, Imgproc.COLOR_RGB2GRAY);
+
+        final Scalar meanGrayscale = Core.mean(grayscale);
+        divTextView.setText((int) meanColor.val[0] + "," + (int) meanColor.val[1] + "," + (int) meanColor.val[2] + "\n" + (int) meanGrayscale.val[0]);
+
+        if (meanGrayscale.val[0] < 200.f) {
+            if (debug) {
+                putMatOnImageView(grayscale, segmentBitmap, segmentImageView);
+            }
+            return null;
+        }
 
         final Mat threshold = new Mat();
         Imgproc.threshold(grayscale, threshold, 200, 255, 0);
@@ -701,5 +762,15 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
     private void showToast(String text) {
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
+    }
+
+    private void initializeTesseract() {
+        tessBaseAPI = new TessBaseAPI();
+        tessBaseAPI.setDebug(false);
+        String path = Environment.getExternalStorageDirectory().getPath() + "/tesseract/";
+        final boolean exists = new File(path + "tessdata").exists();
+        tessBaseAPI.init(path, "eng", TessBaseAPI.OEM_TESSERACT_ONLY);
+        tessBaseAPI.setPageSegMode(TessBaseAPI.PageSegMode.PSM_SINGLE_CHAR);
+        tessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "ABCDEFGHIJKLMNOPQRSTUVWXYZi");
     }
 }
