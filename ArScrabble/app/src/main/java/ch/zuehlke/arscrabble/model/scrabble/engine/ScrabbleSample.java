@@ -18,6 +18,8 @@ public class ScrabbleSample {
         
         game.start();
 
+        //new Turn().placeStone(x,y,Letter.M).placeStone(x,y,Letter.M).apply();
+
 //        game.placeStone(x,y, Letter.M);
 //        game.placeStone(x,y, Letter.M);
 //        game.placeStone(x,y, Letter.X);
