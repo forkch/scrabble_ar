@@ -31,4 +31,7 @@ public class SimpleField {
         this.stone = stone;
     }
 
+    public Stone getStone(){
+        return stone;
+    }
 }

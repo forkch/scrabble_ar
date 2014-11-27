@@ -19,4 +19,8 @@ public class Stone {
     public StoneType getType() {
         return type;
     }
+
+    public boolean isVirtual(){
+        return type == StoneType.VIRTUAL;
+    }
 }

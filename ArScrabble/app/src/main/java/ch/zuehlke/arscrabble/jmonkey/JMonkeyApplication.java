@@ -40,9 +40,20 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import ch.zuehlke.arscrabble.model.scrabble.engine.Board;
+import ch.zuehlke.arscrabble.model.scrabble.engine.Letter;
+import ch.zuehlke.arscrabble.model.scrabble.engine.Player;
+import ch.zuehlke.arscrabble.model.scrabble.engine.Rack;
+import ch.zuehlke.arscrabble.model.scrabble.engine.Scrabble;
+import ch.zuehlke.arscrabble.model.scrabble.engine.Stone;
+import ch.zuehlke.arscrabble.model.scrabble.engine.StoneBag;
+import ch.zuehlke.arscrabble.model.scrabble.engine.StoneType;
+import ch.zuehlke.arscrabble.model.scrabble.solver.ScrabbleSolver;
+import ch.zuehlke.arscrabble.model.scrabble.solver.VirtualStone;
 import ch.zuehlke.arscrabble.vision.ScrabbleBoardMetrics;
 import ch.zuehlke.arscrabble.vuforiautils.SampleMath;
 
@@ -59,8 +70,11 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     private Camera backgroundCamera;
     private Camera foregroundCamera;
     private DataSet mCurrentDataset;
-    private HashMap<String, Spatial> virtualStones = new HashMap<String, Spatial>();
+    private HashMap<VirtualStone, Spatial> virtualStones = new HashMap<VirtualStone, Spatial>();
     private ScrabbleBoardMetrics metrics;
+    private Board board = new Board();
+    private Scrabble game;
+    private Player stefan;
 
     @Override
     public void simpleInitApp() {
@@ -77,6 +91,53 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
 
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB888, true);
         Vuforia.registerCallback(this);
+
+        /* GAME */
+        game = new Scrabble();
+
+        stefan = new Player("Stefan", new Rack(getStefansStones(game.getStoneBag())));
+        Player benjamin = new Player("Benjamin", new Rack(getBenjaminsStones(game.getStoneBag())));
+
+        game.addPlayer(stefan);
+        game.addPlayer(benjamin);
+
+        game.start();
+         /* GAME */
+
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 1);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 2);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 3);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 4);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 5);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 6);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 7);
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 1, 8);
+
+        board.placeVirtualStone(new Stone(Letter.H, StoneType.VIRTUAL), 8, 8);
+    }
+
+    private static List<Stone> getStefansStones(StoneBag stoneBag) {
+        List<Stone> stefansStones = new ArrayList<Stone>();
+        stefansStones.add(stoneBag.pop(Letter.A));
+        stefansStones.add(stoneBag.pop(Letter.D));
+        stefansStones.add(stoneBag.pop(Letter.F));
+        stefansStones.add(stoneBag.pop(Letter.B));
+        stefansStones.add(stoneBag.pop(Letter.O));
+        stefansStones.add(stoneBag.pop(Letter.A));
+        stefansStones.add(stoneBag.pop(Letter.K));
+        return stefansStones;
+    }
+
+    private static List<Stone> getBenjaminsStones(StoneBag stoneBag) {
+        List<Stone> benjaminsStones = new ArrayList<Stone>();
+        benjaminsStones.add(stoneBag.pop(Letter.G));
+        benjaminsStones.add(stoneBag.pop(Letter.H));
+        benjaminsStones.add(stoneBag.pop(Letter.S));
+        benjaminsStones.add(stoneBag.pop(Letter.T));
+        benjaminsStones.add(stoneBag.pop(Letter.M));
+        benjaminsStones.add(stoneBag.pop(Letter.O));
+        benjaminsStones.add(stoneBag.pop(Letter.K));
+        return benjaminsStones;
     }
 
     private void initTrackers() {
@@ -117,7 +178,7 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     private Spatial createStone() {
         Spatial stone = assetManager.loadModel("Models/Stone/stone_u.obj");
         stone.rotate((float) (Math.PI / 2), 0, (float) Math.PI);
-        stone.scale(0.26f);
+        stone.scale(0.27f);
         return stone;
     }
 
@@ -158,14 +219,46 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
     }
 
     private void updateBoard() {
-        // Get all stones to be drawn virtually
-        Board board = new Board();
-        //board.placeLetterStone(Letter.U,1,1);
+
+        ScrabbleSolver solver = new ScrabbleSolver(game);
+        List<VirtualStone> allVirtualStones = solver.getWord(stefan);
 
         // Which stones have to be removed?
+        List<VirtualStone> stonesToRemove = new ArrayList<VirtualStone>();
 
+        for (VirtualStone existingStone : virtualStones.keySet()) {
+            boolean found = false;
+            for (VirtualStone virtualStone : allVirtualStones) {
+                if (existingStone.equals(virtualStone)) {
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                stonesToRemove.add(existingStone);
+            }
+        }
+
+        for (VirtualStone stoneToRemove : stonesToRemove) {
+            rootNode.detachChild(virtualStones.get(stoneToRemove));
+            virtualStones.remove(stoneToRemove);
+        }
 
         // Which stones are new and have to be added?
+        List<VirtualStone> stonesToAdd = new ArrayList<VirtualStone>();
+        for (VirtualStone newStone : allVirtualStones) {
+
+            if (!virtualStones.containsKey(newStone)) {
+                stonesToAdd.add(newStone);
+            }
+        }
+
+        for (VirtualStone stoneToAdd : stonesToAdd) {
+            Spatial stoneSpatial = createStone();
+            moveToField(stoneSpatial, stoneToAdd.getX(), stoneToAdd.getY());
+            rootNode.attachChild(stoneSpatial);
+            virtualStones.put(stoneToAdd, stoneSpatial);
+        }
     }
 
     private void updateBackgroundVideo(float tpf) {
@@ -179,67 +272,15 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         backgroundCameraGeometry.updateGeometricState();
     }
 
-
-
-//    private void drawBoard(Board board) {
-//
-//        // TODO: Search better place for metrics init XD
-//        if (metrics == null) {
-//            return;
-//        }
-//
-//        // Remove old virtual stones from screen
-//        for (Spatial stone : virtualStones) {
-//            rootNode.detachChild(stone);
-//        }
-//
-//        virtualStones.clear();
-//
-//
-//        Spatial stone = createStone();
-//        moveToField(stone, 1, 1);
-//        rootNode.attachChild(stone);
-//        virtualStones.add(stone);
-//
-//        Spatial stone2 = createStone();
-//        moveToField(stone2, 15, 1);
-//        rootNode.attachChild(stone2);
-//        virtualStones.add(stone2);
-//
-//        Spatial stone3 = createStone();
-//        moveToField(stone3, 1, 15);
-//        rootNode.attachChild(stone3);
-//        virtualStones.add(stone3);
-//
-//        Spatial stone4 = createStone();
-//        moveToField(stone4, 15, 15);
-//        rootNode.attachChild(stone4);
-//        virtualStones.add(stone4);
-//
-//        Spatial stoneCenter = createStone();
-//        moveToField(stoneCenter, 8, 8);
-//        rootNode.attachChild(stoneCenter);
-//        virtualStones.add(stoneCenter);
-//
-////        for (int i = 1; i <= 1; i++) {
-////            for (int j = 1; j <= 15; j++) {
-////                Spatial stone = createStone();
-////                moveToField(stone, i, j);
-////                rootNode.attachChild(stone);
-////                virtualStones.add(stone);
-////            }
-////        }
-//    }
-
     private void moveToField(Spatial stone, int x, int y) {
 
         // Initial stone position -> x = 8 / y = 8
         x = x - 8;
         y = (y - 8) * -1;
 
-        int lineWidth = 5;
+        int lineWidth = 6;
 
-        int totalWidth = metrics.getCellWidth() * 15 + metrics.getMarginLeft() + metrics.getMarginRight();
+        int totalWidth = metrics.getCellWidth() * 15 + metrics.getMarginLeft() + metrics.getMarginRight() + 16 * lineWidth;
         float multiplicator = 100.0f / totalWidth;
 
         // Move stone to center (H8)
