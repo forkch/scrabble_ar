@@ -1,12 +1,14 @@
 package ch.zuehlke.arscrabble.model.fields;
 
 import ch.zuehlke.arscrabble.model.Letter;
+import ch.zuehlke.arscrabble.model.LetterType;
 
 /**
  * Created by chsueess on 25.11.14.
  */
 public class SimpleField {
     private Letter letter;
+    private LetterType letterType;
 
     public int calculatePoints() {
         return letter.getPoints();

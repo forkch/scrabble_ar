@@ -10,11 +10,7 @@ import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Geometry;
-import com.jme3.scene.Mesh;
 import com.jme3.scene.Spatial;
-import com.jme3.scene.debug.Arrow;
-import com.jme3.scene.debug.Grid;
-import com.jme3.scene.debug.WireBox;
 import com.jme3.scene.shape.Quad;
 import com.jme3.texture.Image;
 import com.jme3.texture.Texture2D;
@@ -22,7 +18,6 @@ import com.qualcomm.vuforia.CameraCalibration;
 import com.qualcomm.vuforia.CameraDevice;
 import com.qualcomm.vuforia.DataSet;
 import com.qualcomm.vuforia.Frame;
-import com.qualcomm.vuforia.ImageTarget;
 import com.qualcomm.vuforia.ImageTracker;
 import com.qualcomm.vuforia.Matrix34F;
 import com.qualcomm.vuforia.Matrix44F;
@@ -31,7 +26,6 @@ import com.qualcomm.vuforia.Renderer;
 import com.qualcomm.vuforia.STORAGE_TYPE;
 import com.qualcomm.vuforia.State;
 import com.qualcomm.vuforia.Tool;
-import com.qualcomm.vuforia.Trackable;
 import com.qualcomm.vuforia.TrackableResult;
 import com.qualcomm.vuforia.Tracker;
 import com.qualcomm.vuforia.TrackerManager;
@@ -43,7 +37,7 @@ import com.qualcomm.vuforia.Vuforia;
 
 import java.nio.ByteBuffer;
 
-import ch.zuehlke.arscrabble.ScrabbleBoardMetrics;
+import ch.zuehlke.arscrabble.model.Board;
 import ch.zuehlke.arscrabble.vuforiautils.SampleMath;
 
 /**
@@ -76,8 +70,6 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
 
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB888, true);
         Vuforia.registerCallback(this);
-
-        attachCoordinateAxes(new Vector3f(0,0,0));
     }
 
     private void initTrackers() {
@@ -126,52 +118,6 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         isModelAdded = false;
     }
 
-    public Geometry attachWireBox(Vector3f pos, float size, ColorRGBA color){
-        Geometry g = new Geometry("wireframe cube", new WireBox(size, size, size));
-        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.getAdditionalRenderState().setWireframe(true);
-        mat.setColor("Color", color);
-        g.setMaterial(mat);
-        g.setLocalTranslation(pos);
-        rootNode.attachChild(g);
-        return g;
-    }
-
-    private Geometry attachGrid(Vector3f pos, int size, ColorRGBA color){
-        Geometry g = new Geometry("wireframe grid", new Grid(size, size, 0.2f) );
-        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.getAdditionalRenderState().setWireframe(true);
-        mat.setColor("Color", color);
-        g.setMaterial(mat);
-        g.center().move(pos);
-        rootNode.attachChild(g);
-        return g;
-    }
-
-    private void attachCoordinateAxes(Vector3f pos){
-        Arrow arrow = new Arrow(Vector3f.UNIT_X);
-        arrow.setLineWidth(50); // make arrow thicker
-        putShape(arrow, ColorRGBA.Red).setLocalTranslation(pos);
-
-        arrow = new Arrow(Vector3f.UNIT_Y);
-        arrow.setLineWidth(50); // make arrow thicker
-        putShape(arrow, ColorRGBA.Green).setLocalTranslation(pos);
-
-        arrow = new Arrow(Vector3f.UNIT_Z);
-        arrow.setLineWidth(50); // make arrow thicker
-        putShape(arrow, ColorRGBA.Blue).setLocalTranslation(pos);
-    }
-
-    private Geometry putShape(Mesh shape, ColorRGBA color){
-        Geometry g = new Geometry("coordinate axis", shape);
-        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.getAdditionalRenderState().setWireframe(true);
-        mat.setColor("Color", color);
-        g.setMaterial(mat);
-        rootNode.attachChild(g);
-        return g;
-    }
-
     private void initForegroundScene() {
         // Load a model from test_data (OgreXML + material + texture)
         stone = assetManager.loadModel("Models/Stone/stone_u.obj");
@@ -179,9 +125,6 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
 
         stone.scale(0.1f);
         stone.move(-50, 50, 0);
-
-        attachWireBox(new Vector3f(0,0,0), 80, ColorRGBA.Red);
-        attachGrid(new Vector3f(0,0,0), 50, ColorRGBA.Green);
 
         // You must add a light to make the model visible
         addLight(ColorRGBA.White, -1, 0, 0);
@@ -220,6 +163,12 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
 
         updateTracking();
 
+        // Get Board
+        Board board = new Board();
+        board.placeLetterStone(Letter.U,1,1);
+
+        drawBoard(board);
+
         if (hasBackgroundImage) {
             backgroundCameraTexture.setImage(backgroundCameraImage);
             backgroundCameraMaterial.setTexture("ColorMap", backgroundCameraTexture);
@@ -228,6 +177,10 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
         // TODO: WTF? Why we need this method? Crash without...
         backgroundCameraGeometry.updateLogicalState(tpf);
         backgroundCameraGeometry.updateGeometricState();
+    }
+
+    private void drawBoard(Board board) {
+        board.
     }
 
     private void initBackground() {
@@ -357,25 +310,23 @@ public class JMonkeyApplication extends SimpleApplication implements Vuforia.Upd
             Vec2F focalLength = cameraCalibration.getFocalLength();
             float fovRadians = (float) (2 * Math.atan(0.5f * (size.getData()[1] / focalLength.getData()[1])));
             float fovDegrees = (float) (fovRadians * 180.0f / Math.PI);
-            float aspectRatio=(size.getData()[0]/size.getData()[1]);
+            float aspectRatio = (size.getData()[0] / size.getData()[1]);
 
             //adjust for screen vs camera size distorsion
-            float viewportDistort=1.0f;
+            float viewportDistort = 1.0f;
 
             float screenWidth = settings.getWidth();
             float screenHeight = settings.getHeight();
-            if (viewportWidth != screenWidth)
-            {
+            if (viewportWidth != screenWidth) {
                 viewportDistort = viewportWidth / (float) screenWidth;
-                fovDegrees=fovDegrees*viewportDistort;
-                aspectRatio=aspectRatio/viewportDistort;
+                fovDegrees = fovDegrees * viewportDistort;
+                aspectRatio = aspectRatio / viewportDistort;
             }
 
-            if (viewportHeight != screenHeight)
-            {
+            if (viewportHeight != screenHeight) {
                 viewportDistort = viewportHeight / (float) screenHeight;
-                fovDegrees=fovDegrees/viewportDistort;
-                aspectRatio=aspectRatio*viewportDistort;
+                fovDegrees = fovDegrees / viewportDistort;
+                aspectRatio = aspectRatio * viewportDistort;
             }
 
             setCameraPerspective(fovDegrees, aspectRatio);
