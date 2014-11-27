@@ -106,12 +106,12 @@ public class JMonkeyApplication extends SimpleApplication {
     private static List<Stone> getStefansStones(StoneBag stoneBag) {
         List<Stone> stefansStones = new ArrayList<Stone>();
         stefansStones.add(stoneBag.pop(Letter.A));
-        stefansStones.add(stoneBag.pop(Letter.D));
-        stefansStones.add(stoneBag.pop(Letter.F));
         stefansStones.add(stoneBag.pop(Letter.B));
-        stefansStones.add(stoneBag.pop(Letter.O));
-        stefansStones.add(stoneBag.pop(Letter.A));
-        stefansStones.add(stoneBag.pop(Letter.K));
+        stefansStones.add(stoneBag.pop(Letter.C));
+        stefansStones.add(stoneBag.pop(Letter.D));
+        stefansStones.add(stoneBag.pop(Letter.E));
+        stefansStones.add(stoneBag.pop(Letter.F));
+        stefansStones.add(stoneBag.pop(Letter.G));
         return stefansStones;
     }
 
@@ -163,7 +163,7 @@ public class JMonkeyApplication extends SimpleApplication {
     }
 
     private Spatial createStone(Letter letter) {
-        String letterModel = "Models/Stone/stone_n.obj";
+        String letterModel = "Models/Stone/stone_" + letter.getTextureName() + ".obj";
         Spatial stone = assetManager.loadModel(letterModel);
         stone.rotate((float) (Math.PI / 2), 0, (float) Math.PI);
         stone.scale(0.27f);
@@ -360,7 +360,7 @@ public class JMonkeyApplication extends SimpleApplication {
             backgroundCameraImage.setData(backgroundImageBuffer);
 
             Mat imageMat = Mat.zeros(image.getHeight(), image.getWidth(), CvType.CV_8UC3);
-            metrics = new ScrabbleBoardMetrics(imageMat);
+            metrics = ScrabbleBoardMetrics.metricsFromImageFrom3D(imageMat);
 
             backgroundCameraTexture.setImage(backgroundCameraImage);
             backgroundCameraMaterial.setTexture("ColorMap", backgroundCameraTexture);

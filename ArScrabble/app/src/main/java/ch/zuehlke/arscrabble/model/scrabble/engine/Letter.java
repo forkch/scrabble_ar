@@ -4,17 +4,19 @@ package ch.zuehlke.arscrabble.model.scrabble.engine;
  * Created by chsueess on 25.11.14.
  */
 public enum Letter {
-    A('A', 1), B('B', 3), C('C', 4), D('D', 1), E('E', 1), F('F', 4), G('G', 2),
-    H('H', 2), I('I', 1), J('J', 6), K('K', 4), L('L', 2), M('M', 3), N('N', 1),
-    O('O', 2), P('P', 4), Q('Q', 10), R('R', 1), S('S', 1), T('T', 1), U('U', 1),
-    V('V', 6), W('W', 3), X('X', 8), Y('Y', 10), Z('Z', 3), AE('Ä', 6), OE('Ö', 8), UE('Ü', 6), BLANKO('?', 0);
+    A('A', 1, "a"), B('B', 3, "b"), C('C', 4, "c"), D('D', 1, "d"), E('E', 1, "e"), F('F', 4, "f"), G('G', 2, "g"),
+    H('H', 2, "h"), I('I', 1, "i"), J('J', 6, "j"), K('K', 4, "k"), L('L', 2, "l"), M('M', 3, "m"), N('N', 1, "n"),
+    O('O', 2, "o"), P('P', 4, "p"), Q('Q', 10, "q"), R('R', 1, "r"), S('S', 1, "s"), T('T', 1, "t"), U('U', 1, "u"),
+    V('V', 6, "y"), W('W', 3, "w"), X('X', 8, "x"), Y('Y', 10, "y"), Z('Z', 3, "z"), AE('Ä', 6, "ae"), OE('Ö', 8, "oe"), UE('Ü', 6, "ue"), BLANKO('?', 0, "blank");
 
     private char value;
     private int points;
+    private String textureName;
 
-    private Letter(char value, int points){
+    private Letter(char value, int points, String textureName){
         this.value = value;
         this.points = points;
+        this.textureName = textureName;
     }
     public int getPoints() {
         return points;
@@ -23,6 +25,8 @@ public enum Letter {
     public char getValue() {
         return value;
     }
+
+    public String getTextureName(){return textureName;}
 
     public static Letter getLetterFor(char charcater) {
         for(Letter letter : values()) {
