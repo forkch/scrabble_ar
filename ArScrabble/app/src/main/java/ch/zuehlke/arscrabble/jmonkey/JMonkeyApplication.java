@@ -162,8 +162,9 @@ public class JMonkeyApplication extends SimpleApplication {
         return config;
     }
 
-    private Spatial createStone() {
-        Spatial stone = assetManager.loadModel("Models/Stone/stone_u.obj");
+    private Spatial createStone(Letter letter) {
+        String letterModel = "Models/Stone/stone_n.obj";
+        Spatial stone = assetManager.loadModel(letterModel);
         stone.rotate((float) (Math.PI / 2), 0, (float) Math.PI);
         stone.scale(0.27f);
         return stone;
@@ -247,7 +248,7 @@ public class JMonkeyApplication extends SimpleApplication {
         }
 
         for (VirtualStone stoneToAdd : stonesToAdd) {
-            Spatial stoneSpatial = createStone();
+            Spatial stoneSpatial = createStone(stoneToAdd.getStone().getLetter());
             moveToField(stoneSpatial, stoneToAdd.getX(), stoneToAdd.getY());
             rootNode.attachChild(stoneSpatial);
             virtualStones.put(stoneToAdd, stoneSpatial);

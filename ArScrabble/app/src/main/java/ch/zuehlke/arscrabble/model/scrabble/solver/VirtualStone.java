@@ -24,6 +24,10 @@ public class VirtualStone {
         return y;
     }
 
+    public Stone getStone() {
+        return stone;
+    }
+
     public int hashCode() {
         return (x + "_" + y + "_" + stone.getLetter()).hashCode();
     }
