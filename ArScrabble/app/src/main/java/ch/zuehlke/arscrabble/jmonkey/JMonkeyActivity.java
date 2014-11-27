@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import com.jme3.app.AndroidHarness;
 import com.jme3.system.android.AndroidConfigChooser;
@@ -17,7 +18,10 @@ import java.util.HashMap;
 
 import ch.zuehlke.arscrabble.R;
 
-public class JMonkeyActivity extends AndroidHarness {
+public class JMonkeyActivity extends AndroidHarness implements ScrabbleUI {
+
+    private TextView playerNameTextView;
+    private TextView playerStonesTextView;
 
     public JMonkeyActivity() {
         appClass = "ch.zuehlke.arscrabble.jmonkey.JMonkeyApplication";
@@ -34,11 +38,15 @@ public class JMonkeyActivity extends AndroidHarness {
         Vuforia.setInitParameters(this, Vuforia.GL_20);
         Vuforia.init();
 
+        getJMonkeyApplication().setUI(this);
+
         LayoutInflater li = LayoutInflater.from(this);
         RelativeLayout layout = (RelativeLayout)li.inflate(R.layout.activity_jmonkey, null);
 
         addContentView(layout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        playerNameTextView = (TextView)findViewById(R.id.textViewPlayerName);
+        playerStonesTextView = (TextView)findViewById(R.id.textViewPlayerStones);
 
         Button btn = (Button)findViewById(R.id.finishRoundButton);
         btn.setText("Spielzug abgeschlossen");
@@ -71,5 +79,15 @@ public class JMonkeyActivity extends AndroidHarness {
 
     private JMonkeyApplication getJMonkeyApplication() {
         return (JMonkeyApplication) app;
+    }
+
+    @Override
+    public void UpdatePlayer(String name) {
+        playerNameTextView.setText(name);
+    }
+
+    @Override
+    public void UpdatePlayerStones(String stones) {
+        playerStonesTextView.setText(stones);
     }
 }

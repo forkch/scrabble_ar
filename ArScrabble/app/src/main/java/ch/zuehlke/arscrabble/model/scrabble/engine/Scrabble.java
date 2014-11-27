@@ -60,4 +60,8 @@ public class Scrabble {
     public Board getBoard() {
         return board;
     }
+
+    public Player getActivePlayer(){
+        return players.get(activePlayerIndex);
+    }
 }
