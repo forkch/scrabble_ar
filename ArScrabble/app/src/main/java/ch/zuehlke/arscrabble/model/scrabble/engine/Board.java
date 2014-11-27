@@ -39,7 +39,17 @@ public class Board {
     }
 
     public void placeStone(Stone stone, int x, int y) {
-        board[x][y].setStone(stone);
+        validateCoordinates(x, y);
+        if(board[y][x].getStone() != null) {
+            throw new RuntimeException("That is Scrabble not Tetris, stop stacking stones ('" + stone.getLetter() + "' on '" + board[y][x].getLetter() + "') ...goof!");
+        }
+        board[y][x].setStone(stone);
+    }
+
+    private void validateCoordinates(int x, int y) {
+        if(x >= BOARD_SIZE || y >= BOARD_SIZE) {
+            throw new RuntimeException("Board size exceeded (x = '" + x + "' / y = '" + y + "' ...klutz!");
+        }
     }
 
     public void initialize(String[][] boardTemplate) {
@@ -58,7 +68,18 @@ public class Board {
             for(SimpleField field : row) {
                 field.paint();
             }
-            System.out.println("");
+            System.out.println();
+            System.out.println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
         }
+
+    }
+
+    public boolean isStoneWithLetter(Letter letter, int x, int y) {
+        validateCoordinates(x, y);
+        Stone stone = board[y][x].getStone();
+        if(stone != null && letter.equals(stone.getLetter())) {
+            return true;
+        }
+        return false;
     }
 }

@@ -39,12 +39,20 @@ public class Scrabble {
 
         for(Letter letter : letters) {
             Stone stone = rack.pop(letter);
+
+            if(! board.isStoneWithLetter(letter, x, y)) {
+                if(stone == null) {
+                    throw new RuntimeException("The rack does not contain a stone with the letter '" + letter + "' and the board does not help as well ...go to hell!");
+                } else {
+                    board.placeStone(stone, x, y);
+                }
+            }
+
             if(Direction.DOWN.equals(direction)) {
                 y++;
             } else if (Direction.RIGHT.equals(direction)) {
                 x++;
             }
-            board.placeStone(stone, x, y);
         }
 
         activePlayerIndex = nextPlayer();
@@ -57,5 +65,9 @@ public class Scrabble {
         } else {
             return 0;
         }
+    }
+
+    public Board getBoard() {
+        return board;
     }
 }

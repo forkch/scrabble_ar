@@ -18,7 +18,11 @@ public class ScrabbleSample {
         
         game.start();
 
-        game.placeWord(7, 7, Direction.DOWN, Letter.M, Letter.A, Letter.U, Letter.S);
+        game.placeWord(6, 2, Direction.DOWN, Letter.M, Letter.A, Letter.U, Letter.S);
+
+        game.placeWord(4, 5, Direction.RIGHT, Letter.H, Letter.O, Letter.S, Letter.T);
+
+        game.getBoard().paint();
     }
 
     private static List<Stone> getStefansStones(StoneBag stoneBag) {

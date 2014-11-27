@@ -18,7 +18,7 @@ public class SimpleField {
     }
 
     public void paint() {
-        System.out.print(getLetter() == null ? "x" : getLetter());
+        System.out.print(getLetter() == null ? "|   " : "| " + getLetter() + " ");
     }
 
     public Letter getLetter() {
