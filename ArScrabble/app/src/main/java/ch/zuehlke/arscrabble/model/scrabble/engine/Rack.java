@@ -21,7 +21,18 @@ public class Rack {
     public void addStones(List<Stone> newStones) {
         if(newStones.size() > getNumberOfMissingStones())
             throw new RuntimeException("The rack has already '" + stones.size() + "' stones, another '" + newStones.size() + "' are too much...dude!");
-        stones.addAll(stones);
+        stones.addAll(newStones);
+    }
+
+    public Stone pop(Letter letter) {
+        for (Stone stone : stones) {
+            if(stone.getLetter().equals(letter)) {
+                if(stones.remove(letter)) {
+                    return stone;
+                };
+            }
+        }
+        throw new RuntimeException("The rack does not contain a stone with the letter '" + letter + "'");
     }
 
     public int getNumberOfMissingStones() {
