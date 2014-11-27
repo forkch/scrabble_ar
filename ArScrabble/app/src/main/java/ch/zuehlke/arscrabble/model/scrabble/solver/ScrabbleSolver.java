@@ -21,6 +21,8 @@ public class ScrabbleSolver {
         List<VirtualStone> virtualStones = new ArrayList<VirtualStone>();
         List<Stone> stones = player.getRack().getStones();
         virtualStones.add(new VirtualStone(stones.get(0), 4, 4));
+        virtualStones.add(new VirtualStone(stones.get(1), 4, 5));
+        virtualStones.add(new VirtualStone(stones.get(2), 8, 8));
         return virtualStones;
     }
 

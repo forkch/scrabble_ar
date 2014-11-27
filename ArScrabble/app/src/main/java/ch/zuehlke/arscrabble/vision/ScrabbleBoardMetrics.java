@@ -31,26 +31,37 @@ public class ScrabbleBoardMetrics {
     private int cellWidth = 42;
     private int cellHeight = 42;
 
-    public ScrabbleBoardMetrics(Mat image) {
-        this(image.cols(), image.rows());
-    }
-
-    public ScrabbleBoardMetrics(float cols, float rows) {
+    private ScrabbleBoardMetrics(float cols, float rows, boolean addCorrection) {
         this.cols = cols;
         this.rows = rows;
-        marginLeft = (int) (cols * marginLeftPercent + LEFT_CORRECTION);
-        marginRight = (int) (cols * marginRightPercent + RIGHT_CORRECTION);
-        marginTop = (int) (rows * marginTopPercent + TOP_CORRECTION);
-        marginBottom = (int) (rows * marginBottomPercent + BOTTOM_CORRECTION);
 
-        float boardWidth = cols - marginLeft - marginRight;
-        float boardHeight = rows - marginTop - marginBottom;
-        cellWidth = (int) ((boardWidth / 15.f));
-        cellHeight = (int) ((boardHeight / 15.f));
+        if (addCorrection) {
+            marginLeft = (int) (cols * marginLeftPercent + LEFT_CORRECTION);
+            marginRight = (int) (cols * marginRightPercent + RIGHT_CORRECTION);
+            marginTop = (int) (rows * marginTopPercent + TOP_CORRECTION);
+            marginBottom = (int) (rows * marginBottomPercent + BOTTOM_CORRECTION);
+
+            float boardWidth = cols - marginLeft - marginRight;
+            float boardHeight = rows - marginTop - marginBottom;
+            cellWidth = (int) ((boardWidth / 15.f));
+            cellHeight = (int) ((boardHeight / 15.f));
+        } else {
+            // TODO: This code is used to place jmonkey spatials on the board.. 
+            marginLeft = (int) (cols * marginLeftPercent);
+            marginRight = (int) (cols * marginRightPercent);
+            marginTop = (int) (rows * marginTopPercent);
+            marginBottom = (int) (rows * marginBottomPercent);
+            cellWidth = (int) (rows * cellHeightPercent);
+            cellHeight = (int) (rows * cellHeightPercent);
+        }
     }
 
     public static ScrabbleBoardMetrics metricsFromImage(Mat image) {
-        return new ScrabbleBoardMetrics(image);
+        return new ScrabbleBoardMetrics(image.cols(), image.rows(), true);
+    }
+
+    public static ScrabbleBoardMetrics metricsFromImageFrom3D(Mat image) {
+        return new ScrabbleBoardMetrics(image.cols(), image.rows(), false);
     }
 
     public int getMarginLeft() {
@@ -72,11 +83,9 @@ public class ScrabbleBoardMetrics {
         return marginBottom;
     }
 
-
     public int getCellWidth() {
         return cellWidth;
     }
-
 
     public int getCellHeight() {
         return cellHeight;
