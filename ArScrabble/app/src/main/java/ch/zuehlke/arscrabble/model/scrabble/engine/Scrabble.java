@@ -1,4 +1,4 @@
-package ch.zuehlke.arscrabble.model;
+package ch.zuehlke.arscrabble.model.scrabble.engine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +11,7 @@ public class Scrabble {
     private static final int MIN_NUMBER_OF_PLAYERS = 2;
 
     private Board board;
-    private StoneBag stoneBag;
+    private StoneBag stoneBag = new StoneBag();
     private List<Player> players = new ArrayList<Player>();
 
     public void addPlayer(Player player) {
@@ -22,7 +22,6 @@ public class Scrabble {
     }
 
     public void start() {
-       stoneBag = new StoneBag();
        board = new Board();
        if(players.size() < MIN_NUMBER_OF_PLAYERS) {
             throw new RuntimeException("First time Scrabble? You have to be at least two players...dumb ass!");

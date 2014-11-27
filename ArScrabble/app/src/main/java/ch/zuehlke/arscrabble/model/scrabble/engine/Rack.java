@@ -1,4 +1,4 @@
-package ch.zuehlke.arscrabble.model;
+package ch.zuehlke.arscrabble.model.scrabble.engine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,10 +21,14 @@ public class Rack {
     public void addStones(List<Stone> newStones) {
         if(newStones.size() > getNumberOfMissingStones())
             throw new RuntimeException("The rack has already '" + stones.size() + "' stones, another '" + newStones.size() + "' are too much...dude!");
-        stones.addAll(stones);
+        stones.addAll(newStones);
     }
 
     public int getNumberOfMissingStones() {
         return MAX_NUMBER_OF_STONES - stones.size();
+    }
+
+    public List<Stone> getStones() {
+        return stones;
     }
 }

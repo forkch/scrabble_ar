@@ -1,4 +1,4 @@
-package ch.zuehlke.arscrabble.model;
+package ch.zuehlke.arscrabble.model.scrabble.engine;
 
 /**
  * Created by ssh on 27.11.2014.

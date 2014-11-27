@@ -1,7 +1,7 @@
-package ch.zuehlke.arscrabble.model;
+package ch.zuehlke.arscrabble.model.scrabble.engine;
 
-import ch.zuehlke.arscrabble.model.fields.FieldFactory;
-import ch.zuehlke.arscrabble.model.fields.SimpleField;
+import ch.zuehlke.arscrabble.model.scrabble.engine.fields.FieldFactory;
+import ch.zuehlke.arscrabble.model.scrabble.engine.fields.SimpleField;
 
 /**
  * Created by chsueess on 25.11.14.
