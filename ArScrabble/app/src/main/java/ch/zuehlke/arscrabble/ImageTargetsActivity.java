@@ -158,14 +158,14 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
     @Override
     public void putMatOnSegment1ImageView(Mat imageMat) {
-        putMatOnImageView(imageMat, segment2Bitmap, segment2ImageView);
-    }
-
-    @Override
-    public void putMatOnSegment2ImageView(Mat imageMat) {
         putMatOnImageView(imageMat, segment1Bitmap, segment1ImageView);
 
     }
+    @Override
+    public void putMatOnSegment2ImageView(Mat imageMat) {
+        putMatOnImageView(imageMat, segment2Bitmap, segment2ImageView);
+    }
+
 
     @Override
     public void setOCRTextView(String s) {
