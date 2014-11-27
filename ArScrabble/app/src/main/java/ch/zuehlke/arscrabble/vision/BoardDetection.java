@@ -9,6 +9,7 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import ch.zuehlke.arscrabble.ImageTargetsActivity;
@@ -23,7 +24,7 @@ import static ch.zuehlke.arscrabble.VectorUtils.vecToPoint;
 public class BoardDetection {
     private static final String LOGTAG = BoardDetection.class.getSimpleName();
     private static final String LOGTAG_OCR = LOGTAG + "(OCR)";
-    public static final int MINIMAL_OCR_CONFIDENCE = 60;
+    public static final int MINIMAL_OCR_CONFIDENCE = 50;
 
     private final ImageTargetsActivity imageTargetsActivity;
     private final TessBaseAPI tessBaseAPI;
@@ -47,6 +48,7 @@ public class BoardDetection {
 
         boolean drawCircles = true;
         boolean rectify = true;
+        boolean sharpen = true;
         boolean drawBorder = false;
         boolean drawSegmentationLines = rectify && true;
         boolean debugSomeSegments = rectify && true;
@@ -88,12 +90,21 @@ public class BoardDetection {
 
                 logElapsedTime("rectification: ", tic);
             }
+
+            if (sharpen) {
+                Mat blur = new Mat();
+                Imgproc.GaussianBlur(imageMat, blur, new Size(0, 0), 3);
+                Core.addWeighted(imageMat, 1.5, blur, -0.5, 0, blur);
+            }
+
+            final ScrabbleBoardSegmenter scrabbleBoardSegmenter = new ScrabbleBoardSegmenter(imageMat);
+
             if (drawBorder) {
-                Mat rectified = drawBorder(imageMat);
+                drawBorder(imageMat);
             }
 
             if (debugSomeSegments) {
-                Mat scrabbleTile = ScrabbleBoardSegmenter.getScrabbleTile(imageMat, singleSegmentX, singleSegmentY, ScrabbleBoardMetrics.metricsFromImage(imageMat));
+                Mat scrabbleTile = scrabbleBoardSegmenter.getScrabbleTile(imageMat, singleSegmentX, singleSegmentY);
                 performOCR(scrabbleTile, true);
                 singleSegmentX++;
 
@@ -104,16 +115,14 @@ public class BoardDetection {
                 if (singleSegmentY == 2) {
                     singleSegmentY = 0;
                 }
-
-
             }
 
             if (scanScrabbleBoard) {
-                scanScrabbleboard(imageMat);
+                scanScrabbleboard(imageMat, scrabbleBoardSegmenter);
             }
 
             if (drawSegmentationLines) {
-                imageMat = ScrabbleBoardSegmenter.drawSegmentationLines(imageMat);
+                imageMat = scrabbleBoardSegmenter.drawSegmentationLines(imageMat);
             }
 
 
@@ -126,18 +135,20 @@ public class BoardDetection {
     }
 
 
-    private void scanScrabbleboard(Mat image) {
+    private void scanScrabbleboard(Mat image, ScrabbleBoardSegmenter scrabbleBoardSegmenter) {
         long tic = System.currentTimeMillis();
-        final ScrabbleBoardMetrics scrabbleBoardMetrics = ScrabbleBoardMetrics.metricsFromImage(image);
-        for (int horizontalIdx = 0; horizontalIdx < 16; horizontalIdx++) {
-            for (int verticalIdx = 0; verticalIdx < 16; verticalIdx++) {
-                final Mat scrabbleTile = ScrabbleBoardSegmenter.getScrabbleTile(image, horizontalIdx, verticalIdx, scrabbleBoardMetrics);
+        String allLetters = "";
+        for (int verticalIdx = 0; verticalIdx < 16; verticalIdx++) {
+            for (int horizontalIdx = 0; horizontalIdx < 16; horizontalIdx++) {
+                final Mat scrabbleTile = scrabbleBoardSegmenter.getScrabbleTile(image, horizontalIdx, verticalIdx);
                 OCRResult ocrResult = performOCR(scrabbleTile, false);
                 if (ocrResult.hasLetterBeenDetected()) {
                     Log.i(LOGTAG_OCR, "tile at (" + horizontalIdx + "," + verticalIdx + "): " + ocrResult);
+                    allLetters += ocrResult.getLetter();
                 }
             }
         }
+        imageTargetsActivity.setDivTextView(allLetters);
         Log.d(LOGTAG_OCR, "scanScrabbleBoard in " + (System.currentTimeMillis() - tic) + "ms");
 
     }
@@ -156,13 +167,7 @@ public class BoardDetection {
             ocrResult = OCRResult.createNoLetterFound();
         }
         if (debug) {
-            String character;
-            if (!ocrResult.hasLetterBeenDetected()) {
-                character = "n/a";
-            } else {
-                character = ocrResult.getLetter();
-            }
-            imageTargetsActivity.setOCRTextView("(" + singleSegmentX + "," + singleSegmentY + ")=" + character);
+            imageTargetsActivity.setOCRTextView("(" + singleSegmentX + "," + singleSegmentY + ")=" + ocrResult.toString());
         }
         return ocrResult;
     }
@@ -184,7 +189,7 @@ public class BoardDetection {
                 return OCRResult.createNoLetterFound();
             }
 
-            return OCRResult.createForLetterFound(textResult);
+            return OCRResult.createForLetterFound(textResult, confidence);
         } catch (Exception x) {
             Log.e(LOGTAG_OCR, "error", x);
             return OCRResult.createNoLetterFound();
@@ -201,7 +206,8 @@ public class BoardDetection {
         Imgproc.cvtColor(cropped, grayscale, Imgproc.COLOR_RGB2GRAY);
 
         final Scalar meanGrayscale = Core.mean(grayscale);
-        imageTargetsActivity.setDivTextView((int) meanColor.val[0] + "," + (int) meanColor.val[1] + "," + (int) meanColor.val[2] + "\n" + (int) meanGrayscale.val[0]);
+        final String meanColors = (int) meanColor.val[0] + "," + (int) meanColor.val[1] + "," + (int) meanColor.val[2] + "\n" + (int) meanGrayscale.val[0];
+        //imageTargetsActivity.setDivTextView(meanColors);
 
         if (meanGrayscale.val[0] < 200.f) {
             if (debug) {
