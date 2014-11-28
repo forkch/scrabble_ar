@@ -13,8 +13,11 @@ import ch.zuehlke.arscrabble.model.scrabble.engine.Stone;
 public class ScrabbleSolver {
     private Scrabble game;
 
+
+
     public ScrabbleSolver(Scrabble game) {
         this.game = game;
+
     }
 
     public List<VirtualStone> getWord(Player player) {
