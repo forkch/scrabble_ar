@@ -29,7 +29,6 @@ public class BoardDetection {
 
     private final BoardDetectionDebugCallback boardDetectionDebugCallback;
     private TessBaseAPI tessBaseAPI;
-    private int frameCounter;
 
     private int singleSegmentX = 0;
     private int singleSegmentY = 0;
@@ -40,7 +39,7 @@ public class BoardDetection {
         initializeTesseract();
     }
 
-    public void detectBoard(byte[] pixelArray, int imageWidth, int imageHeight, TrackerCorners corners) {
+    public BoardVisionResult detectBoard(byte[] pixelArray, int imageWidth, int imageHeight, TrackerCorners corners, boolean computationFrame, int previewX, int previewY, boolean scanScrabbleBoard) {
 
         long tic = System.currentTimeMillis();
         Mat imageMat = Mat.zeros(imageHeight, imageWidth, CvType.CV_8UC3);
@@ -53,7 +52,6 @@ public class BoardDetection {
         boolean drawBorder = false;
         boolean drawSegmentationLines = rectify && true;
         boolean debugSomeSegments = rectify && true;
-        boolean scanScrabbleBoard = rectify && true;
 
         final Scalar red = new Scalar(255, 0, 0);
         final Scalar green = new Scalar(0, 255, 0);
@@ -66,21 +64,20 @@ public class BoardDetection {
         final Point upperRight = vecToPoint(corners.getUpperRight());
         final Point lowerLeft = vecToPoint(corners.getLowerLeft());
         final Point lowerRight = vecToPoint(corners.getLowerRight());
+
+        BoardVisionResult result;
+
         try {
+
+            Mat liveImage = new Mat();
+            imageMat.copyTo(liveImage);
+
             if (drawCircles) {
-                drawCornerCircles(imageMat, red, green, blue, yellow, cyan, center, upperLeft, upperRight, lowerLeft, lowerRight);
+                drawCornerCircles(liveImage, red, green, blue, yellow, cyan, center, upperLeft, upperRight, lowerLeft, lowerRight);
             }
 
-            boardDetectionDebugCallback.putMatOnLiveImageView(imageMat);
+            boardDetectionDebugCallback.putMatOnLiveImageView(liveImage);
 
-            boolean computationFrame;
-            if (frameCounter < 5) {
-                frameCounter++;
-                computationFrame = false;
-            } else {
-                frameCounter = 0;
-                computationFrame = true;
-            }
 
             if (computationFrame) {
                 Log.i(LOGTAG, "RECALCULATING BOARD");
@@ -105,39 +102,50 @@ public class BoardDetection {
                 }
 
                 if (debugSomeSegments) {
-                    scrabbleTileProcessor.oneTileDebug(imageMat, scrabbleBoardSegmenter, singleSegmentX, singleSegmentY);
+                    if (previewX == -1 || previewY == -1) {
+                        scrabbleTileProcessor.oneTileDebug(imageMat, scrabbleBoardSegmenter, singleSegmentX, singleSegmentY);
+                        singleSegmentX++;
 
-                    singleSegmentX++;
+                        if (singleSegmentX == 3) {
+                            singleSegmentX = 0;
+                            singleSegmentY++;
+                        }
+                        if (singleSegmentY == 2) {
+                            singleSegmentY = 0;
+                        }
+                    } else {
+                        scrabbleTileProcessor.oneTileDebug(imageMat, scrabbleBoardSegmenter, previewX, previewY);
 
-                    if (singleSegmentX == 3) {
-                        singleSegmentX = 0;
-                        singleSegmentY++;
-                    }
-                    if (singleSegmentY == 2) {
-                        singleSegmentY = 0;
                     }
                 }
 
+
+                char[][] lettersOnScrabbleBoard = new char[15][15];
                 if (scanScrabbleBoard) {
-                    scrabbleTileProcessor.scanScrabbleboard(imageMat, scrabbleBoardSegmenter);
+                    lettersOnScrabbleBoard = scrabbleTileProcessor.scanScrabbleboard(imageMat, scrabbleBoardSegmenter);
                 }
 
                 if (drawSegmentationLines) {
                     imageMat = scrabbleBoardSegmenter.drawSegmentationLines(imageMat);
                 }
 
-
                 Mat toDraw = imageMat;
                 boardDetectionDebugCallback.putMatOnProcessedImageView(imageMat);
                 logElapsedTime("total computation took: ", tic);
+                result = new BoardVisionResult(true, lettersOnScrabbleBoard);
+            } else {
+                result = new BoardVisionResult(false, new char[15][15]);
             }
 
             imageMat.release();
         } catch (IllegalStateException e) {
             Log.e(LOGTAG, "something bad happened, discarding frame", e);
+            result = new BoardVisionResult(false, new char[15][15]);
         } finally {
             imageMat.release();
         }
+
+        return result;
     }
 
     private void logElapsedTime(String msg, long tic) {

@@ -15,15 +15,18 @@ import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import com.qualcomm.vuforia.CameraDevice;
 import com.qualcomm.vuforia.DataSet;
@@ -47,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Vector;
 
 import ch.zuehlke.arscrabble.vision.BoardDetection;
+import ch.zuehlke.arscrabble.vision.BoardVisionResult;
 import ch.zuehlke.arscrabble.vuforiautils.Texture;
 
 import static ch.zuehlke.arscrabble.VectorUtils.calcCorners;
@@ -97,6 +101,10 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     private TextView ocrTextView;
     private TextView divTextView;
     private BoardDetection boardDetection;
+    private int frameCounter;
+    private int previewX = -1;
+    private int previewY = -1;
+    private ToggleButton scanBoardButton;
 
 
     // Called when the activity first starts or the user navigates back to an
@@ -112,6 +120,46 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
         segment2ImageView = (ImageView) findViewById(R.id.segment2);
         ocrTextView = (TextView) findViewById(R.id.ocr);
         divTextView = (TextView) findViewById(R.id.div);
+        scanBoardButton = (ToggleButton) findViewById(R.id.scanBoardButton);
+        findViewById(R.id.x);
+        SeekBar xSeekbar = (SeekBar) findViewById(R.id.x);
+        SeekBar ySeekbar = (SeekBar) findViewById(R.id.y);
+        final TextView xyTextview = (TextView) findViewById(R.id.xyTextview);
+
+        xSeekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                previewX = progress - 1;
+                displaySelectedScrabbleCoordinates(xyTextview);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+        ySeekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                previewY = progress - 1;
+                displaySelectedScrabbleCoordinates(xyTextview);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
 
 
         vuforiaAppSession = new ApplicationSession(this);
@@ -134,9 +182,10 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
 
     }
 
-    public void putMatOnLiveImageView(Mat imageMat) {
-        putMatOnImageView(imageMat, liveBitmap, liveImageView);
+    public void displaySelectedScrabbleCoordinates(TextView xyTextview) {
+        xyTextview.setText("Scrabble-Coords ( " + (previewX + 1) + "," + (previewY + 1) + ")");
     }
+
 
     private void putMatOnImageView(Mat image, Bitmap bitmap, ImageView imageView) {
         // convert to bitmap:
@@ -144,11 +193,20 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             bitmap.recycle();
         }
 
-        bitmap = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(image, bitmap);
-        imageView.setImageBitmap(bitmap);
+        if (image != null) {
+            bitmap = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(image, bitmap);
+            imageView.setImageBitmap(bitmap);
+        } else {
+            imageView.setImageBitmap(null);
+        }
 
 
+    }
+
+    @Override
+    public void putMatOnLiveImageView(Mat imageMat) {
+        putMatOnImageView(imageMat, liveBitmap, liveImageView);
     }
 
     @Override
@@ -447,6 +505,7 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
     @Override
     public void onQCARUpdate(State state) {
         Image imageFromFrame = null;
+        TrackerCorners corners = null;
 
         long tic = System.currentTimeMillis();
         Frame frame = state.getFrame();
@@ -456,9 +515,13 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             android.graphics.Point windowSize = new android.graphics.Point();
             final View view = findViewById(android.R.id.content);
 
+            DisplayMetrics metrics = new DisplayMetrics();
+            getWindowManager().getDefaultDisplay().getMetrics(metrics);
+//            mScreenWidth = metrics.widthPixels;
+//            mScreenHeight = metrics.heightPixels;
             windowSize.set(1280, 720);
 
-            final TrackerCorners corners = calcCorners(state, state.getTrackableResult(tIdx), windowSize.x, windowSize.y, isLandscape);
+            corners = calcCorners(state, state.getTrackableResult(tIdx), windowSize.x, windowSize.y, isLandscape);
             for (int imageIdx = 0; imageIdx < frame.getNumImages(); imageIdx++) {
                 Image image = frame.getImage(imageIdx);
                 if (image.getFormat() == PIXEL_FORMAT.RGB888) {
@@ -467,17 +530,41 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
                 }
             }
 
+            final boolean computationFrame;
+            if (frameCounter < 5) {
+                frameCounter++;
+                computationFrame = false;
+            } else {
+                frameCounter = 0;
+                computationFrame = true;
+            }
 
-            if (imageFromFrame != null) {
-                ByteBuffer pixels = imageFromFrame.getPixels();
+            final Image finalImageFromFrame = imageFromFrame;
+            final TrackerCorners finalCorners = corners;
+            if (finalImageFromFrame != null && finalCorners != null) {
+                ByteBuffer pixels = finalImageFromFrame.getPixels();
                 byte[] pixelArray = new byte[pixels.remaining()];
                 pixels.get(pixelArray, 0, pixelArray.length);
-                int imageWidth = imageFromFrame.getWidth();
-                int imageHeight = imageFromFrame.getHeight();
-                int stride = imageFromFrame.getStride();
+                int imageWidth = finalImageFromFrame.getWidth();
+                int imageHeight = finalImageFromFrame.getHeight();
 
-                boardDetection.detectBoard(pixelArray, imageWidth, imageHeight, corners);
+                final BoardVisionResult boardVisionResult = boardDetection.detectBoard(pixelArray, imageWidth, imageHeight, finalCorners, computationFrame, previewX, previewY, scanBoardButton.isChecked());
+                if (boardVisionResult.isScanSuccessful()) {
+
+                    for (char[] row : boardVisionResult.getLettersOnBoard()) {
+                        for (char field : row) {
+                            if (field != 0) {
+                                System.out.print("" + field + " ");
+                            } else {
+                                System.out.print("-" + " ");
+
+                            }
+                        }
+                        System.out.println("");
+                    }
+                }
             }
+
         }
 
         if (mSwitchDatasetAsap) {
@@ -495,7 +582,6 @@ public class ImageTargetsActivity extends Activity implements ApplicationControl
             doLoadTrackersData();
         }
     }
-
 
     @Override
     public boolean doInitTrackers() {

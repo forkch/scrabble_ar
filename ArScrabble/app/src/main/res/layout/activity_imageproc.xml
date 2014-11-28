@@ -67,8 +67,42 @@
 
         <ImageView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/processed"
-            android:layout_weight="1" />
+            android:layout_height="250dp"
+            android:id="@+id/processed" />
+
+        <SeekBar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/x"
+            android:layout_marginBottom="10dp"
+            android:layout_gravity="right"
+            android:max="15" />
+
+        <SeekBar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/y"
+            android:max="15" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/xyTextview"
+                android:layout_weight="1" />
+
+            <ToggleButton
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textOff="no scan"
+                android:textOn="scan"
+                android:id="@+id/scanBoardButton" />
+        </LinearLayout>
+
     </LinearLayout>
 </LinearLayout>
