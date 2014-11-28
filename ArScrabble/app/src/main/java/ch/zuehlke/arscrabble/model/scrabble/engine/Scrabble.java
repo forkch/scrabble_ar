@@ -32,8 +32,10 @@ public class Scrabble {
 
     public Turn newTurn(Letter... letters) {
         Player activePlayer = players.get(activePlayerIndex);
-        for(Letter letter : letters) {
-            activePlayer.getRack().addStone(stoneBag.pop(letter));
+        if(letters != null) {
+            for (Letter letter : letters) {
+                activePlayer.getRack().addStone(stoneBag.pop(letter));
+            }
         }
 
         if(! activePlayer.getRack().isFull() && stoneBag.hasStones()) {
@@ -74,7 +76,11 @@ public class Scrabble {
 
     private void paintPlayers() {
         for(Player player : players) {
-            System.out.println(player.toString());
+            if(player.equals(getActivePlayer())) {
+                System.out.println("A: " + player.toString());
+            } else {
+                System.out.println(player.toString());
+            }
         }
     }
 

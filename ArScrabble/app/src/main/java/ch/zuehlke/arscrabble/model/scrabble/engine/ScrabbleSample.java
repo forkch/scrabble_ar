@@ -18,7 +18,7 @@ public class ScrabbleSample {
         
         game.start();
 
-        Turn turn1 = game.newTurn().placeStone(7,5,Letter.M)
+        Turn turn1 = game.newTurn(null).placeStone(7,5,Letter.M)
                 .placeStone(7,6,Letter.A)
                 .placeStone(7,7,Letter.U)
                 .placeStone(7,8,Letter.S);
