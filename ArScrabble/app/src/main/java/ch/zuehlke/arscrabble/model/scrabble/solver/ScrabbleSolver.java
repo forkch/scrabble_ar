@@ -40,13 +40,20 @@ public class ScrabbleSolver {
         stefansStones.add(stoneBag.pop(Letter.U));
         stefansStones.add(stoneBag.pop(Letter.D));
         stefansStones.add(stoneBag.pop(Letter.A));
-        stefansStones.add(stoneBag.pop(Letter.B));
+        stefansStones.add(stoneBag.pop(Letter.H));
         stefansStones.add(stoneBag.pop(Letter.M));
         stefansStones.add(stoneBag.pop(Letter.A));
         stefansStones.add(stoneBag.pop(Letter.S));
 
        String regex = createRegex( new Player("Hans", new Rack(stefansStones)).getRack().getStonesAsString());
-        System.out.print(regex);
+
+       System.out.println(regex);
+
+       for(IndexedWord indexedWord : index) {
+           if(indexedWord.getSortedWord().matches(regex)) {
+               System.out.println(indexedWord.getWord());
+           }
+       }
 
 
     }
@@ -58,7 +65,7 @@ public class ScrabbleSolver {
     }
 
     private String createRegex(String letters) {
-        letters = sortWord(letters);
+        letters = sortWord(letters).toLowerCase();
 
         // a{0,2}
         String regex = "";
