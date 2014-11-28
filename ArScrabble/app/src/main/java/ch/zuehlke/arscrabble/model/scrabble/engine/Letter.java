@@ -34,6 +34,6 @@ public enum Letter {
                 return letter;
             }
         }
-        throw new RuntimeException("Ever saw a scrabble with a letter '' + stringLetter + ''...jerk!");
+        throw new ScrabbleException("Ever saw a scrabble with a letter '' + stringLetter + ''...jerk!");
     }
 }

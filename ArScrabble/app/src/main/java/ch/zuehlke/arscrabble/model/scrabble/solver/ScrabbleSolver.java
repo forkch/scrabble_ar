@@ -15,9 +15,12 @@ public class ScrabbleSolver {
 
 
 
-    public ScrabbleSolver(Scrabble game) {
+    public ScrabbleSolver(Scrabble game, String[] wordList) {
         this.game = game;
 
+        for(String word : wordList) {
+            System.out.println(word);
+        }
     }
 
     public List<VirtualStone> getWord(Player player) {

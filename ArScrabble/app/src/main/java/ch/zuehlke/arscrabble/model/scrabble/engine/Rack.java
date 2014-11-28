@@ -13,7 +13,7 @@ public class Rack {
 
     public Rack(List<Stone> initialStones) {
         if(initialStones == null || initialStones.size() != MAX_NUMBER_OF_STONES) {
-            throw new RuntimeException("Every rack has '" + MAX_NUMBER_OF_STONES + "' not '" + initialStones.size() + "'in the beginning...stupid!");
+            throw new ScrabbleException("Every rack has '" + MAX_NUMBER_OF_STONES + "' not '" + initialStones.size() + "'in the beginning...stupid!");
         }
         addStones(initialStones);
     }
@@ -26,7 +26,7 @@ public class Rack {
 
     public void addStone(Stone stone) {
         if(stones.size() + 1 > MAX_NUMBER_OF_STONES)
-            throw new RuntimeException("The rack has already '" + stones.size() + "' stones, another one is too much...dude!");
+            throw new ScrabbleException("The rack has already '" + stones.size() + "' stones, another one is too much...dude!");
         stones.add(stone);
     }
 

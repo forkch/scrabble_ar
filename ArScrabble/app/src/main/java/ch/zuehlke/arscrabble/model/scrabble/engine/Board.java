@@ -41,14 +41,14 @@ public class Board {
     public void placeStone(Stone stone, int x, int y) {
         validateCoordinates(x, y);
         if(board[y][x].getStone() != null) {
-            throw new RuntimeException("That is Scrabble not Tetris, stop stacking stones ('" + stone.getLetter() + "' on '" + board[y][x].getLetter() + "') ...goof!");
+            throw new ScrabbleException("That is Scrabble not Tetris, stop stacking stones ('" + stone.getLetter() + "' on '" + board[y][x].getLetter() + "') ...goof!");
         }
         board[y][x].setStone(stone);
     }
 
     private void validateCoordinates(int x, int y) {
         if(x >= BOARD_SIZE || y >= BOARD_SIZE) {
-            throw new RuntimeException("Board size exceeded (x = '" + x + "' / y = '" + y + "' ...klutz!");
+            throw new ScrabbleException("Board size exceeded (x = '" + x + "' / y = '" + y + "' ...klutz!");
         }
     }
 

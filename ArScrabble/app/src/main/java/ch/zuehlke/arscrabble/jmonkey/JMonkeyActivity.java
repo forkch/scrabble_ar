@@ -1,7 +1,6 @@
 package ch.zuehlke.arscrabble.jmonkey;
 
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
@@ -17,18 +16,23 @@ import com.jme3.app.AndroidHarness;
 import com.jme3.system.android.AndroidConfigChooser;
 import com.qualcomm.vuforia.Vuforia;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 
 import ch.zuehlke.arscrabble.R;
 
 public class JMonkeyActivity extends AndroidHarness implements ScrabbleUI {
 
+    private static final String DICTIONARY_FILE_NAME = "german.dic";
+
     private TextView playerNameTextView;
     private TextView playerStonesTextView;
-
     private TextView playerNeedStonesInfo;
-    private Button playerNeedStonesSaveButton;
+
     private EditText playerNeedStonesEditText;
+
+    private Button playerNeedStonesSaveButton;
     private Button finishRoundButton;
 
     public JMonkeyActivity() {
@@ -99,7 +103,8 @@ public class JMonkeyActivity extends AndroidHarness implements ScrabbleUI {
         addPlayerInfosFromIntent(players, intent, "player3Name", "player3NameStones");
         addPlayerInfosFromIntent(players, intent, "player4Name", "player4NameStones");
 
-        getJMonkeyApplication().startGame(players);
+
+        getJMonkeyApplication().startGame(players, getWordList());
     }
 
     private void addPlayerInfosFromIntent(HashMap<String, String> players, Intent intent, String nameExtra, String stoneExtra) {
@@ -139,5 +144,19 @@ public class JMonkeyActivity extends AndroidHarness implements ScrabbleUI {
         }
 
         finishRoundButton.setEnabled(!value);
+    }
+
+    private String[] getWordList() {
+        try {
+            InputStream is = getAssets().open(DICTIONARY_FILE_NAME);
+            int ch;
+            StringBuilder sb = new StringBuilder();
+            while((ch = is.read())!= -1)
+                sb.append((char)ch);
+            String[] words = sb.toString().split(System.getProperty("line.separator"));
+            return words;
+        } catch (IOException e) {
+            throw new RuntimeException("Could not read dictionary file '" + DICTIONARY_FILE_NAME + "'");
+        }
     }
 }

@@ -107,11 +107,10 @@ public class JMonkeyApplication extends SimpleApplication implements BoardDetect
         }
     }
 
-    public void startGame(HashMap<String, String> players) {
+    public void startGame(HashMap<String, String> players, String[] wordList) {
         game = new Scrabble();
 
         for (Map.Entry<String, String> playerInfo : players.entrySet()) {
-
             List<Stone> stones = new ArrayList<Stone>();
             char[] stoneParts = playerInfo.getValue().toCharArray();
             for (char stone : stoneParts) {
@@ -124,7 +123,8 @@ public class JMonkeyApplication extends SimpleApplication implements BoardDetect
 
         game.start();
 
-        scrabbleSolver = new ScrabbleSolver(game);
+
+        scrabbleSolver = new ScrabbleSolver(game, wordList);
 
         updateActivePlayer();
 

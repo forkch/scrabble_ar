@@ -17,7 +17,7 @@ public class Scrabble {
 
     public void addPlayer(Player player) {
         if(players.size() > MAX_NUMBER_OF_PLAYERS) {
-            throw new RuntimeException("'" + players.size() + "' are enough for a soccer game, but too much for Scrabble...idiot!");
+            throw new ScrabbleException("'" + players.size() + "' are enough for a soccer game, but too much for Scrabble...idiot!");
         }
         players.add(player);
     }
@@ -25,7 +25,7 @@ public class Scrabble {
     public void start() {
        board = new Board();
        if(players.size() < MIN_NUMBER_OF_PLAYERS) {
-            throw new RuntimeException("First time Scrabble? You have to be at least two players ...dumb ass!");
+            throw new ScrabbleException("First time Scrabble? You have to be at least two players ...dumb ass!");
        }
         activePlayerIndex = 0;
     }
