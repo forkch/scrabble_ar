@@ -157,7 +157,7 @@ public class JMonkeyApplication extends SimpleApplication implements BoardDetect
         finishRound = true;
     }
 
-    public void startGame(HashMap<String, String> players, String[] wordList) {
+    public void startGame(HashMap<String, String> players, List<String> wordList) {
         game = new Scrabble();
 
         for (Map.Entry<String, String> playerInfo : players.entrySet()) {

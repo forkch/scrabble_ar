@@ -16,15 +16,19 @@ import com.jme3.app.AndroidHarness;
 import com.jme3.system.android.AndroidConfigChooser;
 import com.qualcomm.vuforia.Vuforia;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import ch.zuehlke.arscrabble.R;
 
 public class JMonkeyActivity extends AndroidHarness implements ScrabbleUI {
 
-    private static final String DICTIONARY_FILE_NAME = "german.dic";
+    private static final String DICTIONARY_FILE_NAME = "Dictionaries/german.dic";
 
     private TextView playerNameTextView;
     private TextView playerStonesTextView;
@@ -73,9 +77,9 @@ public class JMonkeyActivity extends AndroidHarness implements ScrabbleUI {
         playerNameTextView = (TextView) findViewById(R.id.textViewPlayerName);
         playerStonesTextView = (TextView) findViewById(R.id.textViewPlayerStones);
 
-        playerNeedStonesEditText = (EditText)findViewById(R.id.editTextNewStones);
-        playerNeedStonesInfo = (TextView)findViewById(R.id.textViewNotEnough);
-        playerNeedStonesSaveButton = (Button)findViewById(R.id.setNewStones);
+        playerNeedStonesEditText = (EditText) findViewById(R.id.editTextNewStones);
+        playerNeedStonesInfo = (TextView) findViewById(R.id.textViewNotEnough);
+        playerNeedStonesSaveButton = (Button) findViewById(R.id.setNewStones);
 
         playerNeedStonesSaveButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -166,14 +170,18 @@ public class JMonkeyActivity extends AndroidHarness implements ScrabbleUI {
         });
     }
 
-    private String[] getWordList() {
+    private List<String> getWordList() {
         try {
             InputStream is = getAssets().open(DICTIONARY_FILE_NAME);
-            int ch;
-            StringBuilder sb = new StringBuilder();
-            while((ch = is.read())!= -1)
-                sb.append((char)ch);
-            String[] words = sb.toString().split(System.getProperty("line.separator"));
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            List<String> words = new ArrayList<String>();
+            String mLine = reader.readLine();
+            while (mLine != null) {
+                mLine = reader.readLine();
+                words.add(mLine);
+            }
+
             return words;
         } catch (IOException e) {
             throw new RuntimeException("Could not read dictionary file '" + DICTIONARY_FILE_NAME + "'");

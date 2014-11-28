@@ -19,10 +19,10 @@ public class ScrabbleSolver {
     private List<IndexedWord> index;
 
     public static void main(String[] args) {
-        ScrabbleSolver solver = new ScrabbleSolver(null, new String[]{"Haus", "Bild", "Baum", "Katzen", "Pflanzen"});
+//        ScrabbleSolver solver = new ScrabbleSolver(null, new {"Haus", "Bild", "Baum", "Katzen", "Pflanzen"});
     }
 
-    public ScrabbleSolver(Scrabble game, String[] wordList) {
+    public ScrabbleSolver(Scrabble game, List<String> wordList) {
         this.game = game;
 
         index = new ArrayList<IndexedWord>();
@@ -32,30 +32,8 @@ public class ScrabbleSolver {
             String sorted = sortWord(word);
             IndexedWord indexedWord = new IndexedWord(word, sorted, 3);
             index.add(indexedWord);
-            System.out.println(indexedWord.getWord() + "-->" + indexedWord.getSortedWord());
+//            System.out.println(indexedWord.getWord() + "-->" + indexedWord.getSortedWord());
         }
-
-        StoneBag stoneBag = new StoneBag();
-        List<Stone> stefansStones = new ArrayList<Stone>();
-        stefansStones.add(stoneBag.pop(Letter.U));
-        stefansStones.add(stoneBag.pop(Letter.D));
-        stefansStones.add(stoneBag.pop(Letter.A));
-        stefansStones.add(stoneBag.pop(Letter.H));
-        stefansStones.add(stoneBag.pop(Letter.M));
-        stefansStones.add(stoneBag.pop(Letter.A));
-        stefansStones.add(stoneBag.pop(Letter.S));
-
-       String regex = createRegex( new Player("Hans", new Rack(stefansStones)).getRack().getStonesAsString());
-
-       System.out.println(regex);
-
-       for(IndexedWord indexedWord : index) {
-           if(indexedWord.getSortedWord().matches(regex)) {
-               System.out.println(indexedWord.getWord());
-           }
-       }
-
-
     }
 
     private String sortWord(String word) {
@@ -89,15 +67,20 @@ public class ScrabbleSolver {
     }
 
     public List<VirtualStone> getWord(Player player) {
+
+        Rack rack = player.getRack();
+        String regex = createRegex(rack.getStonesAsString());
         List<VirtualStone> virtualStones = new ArrayList<VirtualStone>();
-        List<Stone> stones = player.getRack().getStones();
-        virtualStones.add(new VirtualStone(stones.get(0), 1, 8));
-        virtualStones.add(new VirtualStone(stones.get(1), 2, 8));
-        virtualStones.add(new VirtualStone(stones.get(2), 3, 8));
-        virtualStones.add(new VirtualStone(stones.get(3), 4, 8));
-        virtualStones.add(new VirtualStone(stones.get(4), 5, 8));
-        virtualStones.add(new VirtualStone(stones.get(5), 6, 8));
-        virtualStones.add(new VirtualStone(stones.get(6), 7, 8));
+
+        for(IndexedWord indexedWord : index) {
+            if(indexedWord.getSortedWord().matches(regex)) {
+                int i = 2;
+                for(char character : indexedWord.getWord().toCharArray()) {
+                    virtualStones.add(new VirtualStone(rack.pop(Letter.getLetterFor(character)), i, 3));
+                }
+                return virtualStones;
+            }
+        }
 
         return virtualStones;
     }
