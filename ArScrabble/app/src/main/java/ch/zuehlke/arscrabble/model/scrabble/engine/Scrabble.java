@@ -25,13 +25,22 @@ public class Scrabble {
     public void start() {
        board = new Board();
        if(players.size() < MIN_NUMBER_OF_PLAYERS) {
-            throw new RuntimeException("First time Scrabble? You have to be at least two players...dumb ass!");
+            throw new RuntimeException("First time Scrabble? You have to be at least two players ...dumb ass!");
        }
         activePlayerIndex = 0;
     }
 
-    public Turn newTurn() {
-        return new Turn(board, players.get(activePlayerIndex));
+    public Turn newTurn(Letter... letters) {
+        Player activePlayer = players.get(activePlayerIndex);
+        for(Letter letter : letters) {
+            activePlayer.getRack().addStone(stoneBag.pop(letter));
+        }
+
+        if(! activePlayer.getRack().isFull() && stoneBag.hasStones()) {
+            throw new ScrabbleException("'" + activePlayer.getRack().size() + "' are a wrong amount of stones. Take less / more...do it!");
+        }
+
+        return new Turn(board, activePlayer);
     }
 
     public StoneBag getStoneBag() {
@@ -50,11 +59,23 @@ public class Scrabble {
 
     public void executeTurn(Turn turn) {
         turn.validate();
+        paintPlayers();
         for(TurnStep turnStep : turn.getSteps()) {
             board.placeStone(turnStep.getStone(), turnStep.getX(), turnStep.getY());
         }
-        board.paint();
+        paintBoard();
+
         activePlayerIndex = nextPlayer();
+    }
+
+    private void paintBoard() {
+        System.out.println(board.toString());
+    }
+
+    private void paintPlayers() {
+        for(Player player : players) {
+            System.out.println(player.toString());
+        }
     }
 
     public Board getBoard() {

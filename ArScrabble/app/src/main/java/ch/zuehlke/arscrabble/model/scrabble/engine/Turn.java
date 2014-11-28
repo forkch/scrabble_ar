@@ -19,12 +19,10 @@ public class Turn {
     public Turn placeStone(int x, int y, Letter letter) {
         Stone stone = player.getRack().pop(letter);
 
-        if(! board.isStoneWithLetter(letter, x, y)) {
-            if(stone == null) {
-                throw new RuntimeException("The rack does not contain a stone with the letter '" + letter + "' and the board does not help as well ...go to hell!");
-            } else {
-                step.add(new TurnStep(x, y, stone));
-            }
+        if(stone == null) {
+            throw new RuntimeException("The rack does not contain a stone with the letter '" + letter + "' ...go to hell!");
+        } else {
+            step.add(new TurnStep(x, y, stone));
         }
 
         return this;

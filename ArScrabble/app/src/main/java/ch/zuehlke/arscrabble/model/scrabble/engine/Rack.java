@@ -18,10 +18,16 @@ public class Rack {
         addStones(initialStones);
     }
 
-    public void addStones(List<Stone> newStones) {
-        if(newStones.size() > getNumberOfMissingStones())
-            throw new RuntimeException("The rack has already '" + stones.size() + "' stones, another '" + newStones.size() + "' are too much...dude!");
-        stones.addAll(newStones);
+    private void addStones(List<Stone> newStones) {
+        for(Stone stone : newStones) {
+            addStone(stone);
+        }
+    }
+
+    public void addStone(Stone stone) {
+        if(stones.size() + 1 > MAX_NUMBER_OF_STONES)
+            throw new RuntimeException("The rack has already '" + stones.size() + "' stones, another one is too much...dude!");
+        stones.add(stone);
     }
 
     public Stone pop(Letter letter) {
@@ -41,5 +47,22 @@ public class Rack {
 
     public List<Stone> getStones() {
         return stones;
+    }
+
+    public String toString() {
+        String stringRack = "";
+       for(Stone stone : stones) {
+            stringRack += stone.getLetter() + " ";
+        }
+        return stringRack;
+    }
+
+
+    public boolean isFull() {
+        return (stones.size() == MAX_NUMBER_OF_STONES);
+    }
+
+    public int size() {
+        return stones.size();
     }
 }

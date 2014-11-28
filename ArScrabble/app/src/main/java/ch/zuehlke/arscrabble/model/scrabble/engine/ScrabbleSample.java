@@ -25,8 +25,18 @@ public class ScrabbleSample {
 
         game.executeTurn(turn1);
 
-        // game.placeWord(new Word(7, 10, Direction.DOWN, Letter.H, Letter.O, Letter.S, Letter.T));
-        // game.getBoard().paint();
+        Turn turn2 = game.newTurn().placeStone(6,6,Letter.H)
+                .placeStone(8,6,Letter.S)
+                .placeStone(9,6,Letter.T);
+
+        game.executeTurn(turn2);
+
+        Turn turn3 = game.newTurn(Letter.A, Letter.N, Letter.Z, Letter.U)
+                .placeStone(9,7,Letter.A)
+                .placeStone(9,8,Letter.N)
+                .placeStone(9,9,Letter.Z);
+
+        game.executeTurn(turn3);
     }
 
     private static List<Stone> getStefansStones(StoneBag stoneBag) {
