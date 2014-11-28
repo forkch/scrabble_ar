@@ -51,7 +51,6 @@ import ch.zuehlke.arscrabble.model.scrabble.engine.Player;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Rack;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Scrabble;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Stone;
-import ch.zuehlke.arscrabble.model.scrabble.engine.StoneBag;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Turn;
 import ch.zuehlke.arscrabble.model.scrabble.engine.fields.SimpleField;
 import ch.zuehlke.arscrabble.model.scrabble.solver.ScrabbleSolver;
@@ -155,7 +154,14 @@ public class JMonkeyApplication extends SimpleApplication implements BoardDetect
         game = new Scrabble();
 
         for (Map.Entry<String, String> playerInfo : players.entrySet()) {
-            Player player = new Player(playerInfo.getKey(), new Rack(getStones(playerInfo.getValue(), game.getStoneBag())));
+
+            List<Stone> stones = new ArrayList<Stone>();
+            char[] stoneParts = playerInfo.getValue().toCharArray();
+            for (char stone : stoneParts) {
+                stones.add(game.getStoneBag().pop(Letter.valueOf((stone + "").toUpperCase())));
+            }
+
+            Player player = new Player(playerInfo.getKey(), new Rack(stones));
             game.addPlayer(player);
         }
 
@@ -169,8 +175,12 @@ public class JMonkeyApplication extends SimpleApplication implements BoardDetect
     }
 
     public void setNewStones(String newStones) {
-        List<Stone> stones = getStones(newStones, game.getStoneBag());
-        currentTurn = game.newTurn(stones);
+        char[] stoneParts = newStones.toCharArray();
+        Letter[] letters = new Letter[stoneParts.length];
+        for (int i=0; i<stoneParts.length; i++) {
+            letters[i] = Letter.valueOf(stoneParts[i] + "");
+        }
+        currentTurn = game.newTurn(letters);
         updateActivePlayer();
     }
 
@@ -205,17 +215,6 @@ public class JMonkeyApplication extends SimpleApplication implements BoardDetect
         initForegroundScene();
 
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB888, true);
-    }
-
-    private static List<Stone> getStones(String stoneDefinition, StoneBag stoneBag) {
-
-        List<Stone> stones = new ArrayList<Stone>();
-        char[] stoneParts = stoneDefinition.toCharArray();
-        for (char stone : stoneParts) {
-            stones.add(stoneBag.pop(Letter.valueOf((stone + "").toUpperCase())));
-        }
-
-        return stones;
     }
 
     private void initTrackers() {

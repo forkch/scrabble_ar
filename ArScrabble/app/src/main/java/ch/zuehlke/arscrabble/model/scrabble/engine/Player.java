@@ -19,4 +19,8 @@ public class Player {
     public Rack getRack() {
         return rack;
     }
+
+    public String toString() {
+        return name + ": " + rack.toString();
+    }
 }
