@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import ch.zuehlke.arscrabble.TrackerCorners;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Letter;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Player;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Rack;
@@ -55,8 +56,11 @@ import ch.zuehlke.arscrabble.model.scrabble.engine.fields.SimpleField;
 import ch.zuehlke.arscrabble.model.scrabble.solver.ScrabbleSolver;
 import ch.zuehlke.arscrabble.model.scrabble.solver.VirtualStone;
 import ch.zuehlke.arscrabble.vision.BoardDetection;
+import ch.zuehlke.arscrabble.vision.BoardVisionResult;
 import ch.zuehlke.arscrabble.vision.ScrabbleBoardMetrics;
 import ch.zuehlke.arscrabble.vuforiautils.SampleMath;
+
+import static ch.zuehlke.arscrabble.VectorUtils.calcCorners;
 
 /**
  * Created by ssh on 25.11.2014.
@@ -78,33 +82,79 @@ public class JMonkeyApplication extends SimpleApplication implements BoardDetect
     private boolean isBoardVisible;
     private ScrabbleUI ui;
     private Scrabble game;
+    private BoardDetection boardDetection;
 
-    public void roundFinished() {
+    private boolean finishRound;
 
-        //currentTurn.placeStone()
+    private void finishRound(State currentState){
 
-        SimpleField[][] fields = game.getBoard().getFields();
+        finishRound = false;
 
-        for(int x =0; x<fields.length; x++){
-            SimpleField[] row = fields[x];
-            for(int y=0; y<row.length; y++) {
-                SimpleField field = row[y];
+        com.qualcomm.vuforia.Image image = getRGB888Image(currentState.getFrame());
+        if (image != null && isBoardTracked) {
 
-                //if(...){
-                    //currentTurn.placeStone(x,y, ...);
-                //}
+            Log.d("Vision", "Start ");
+            android.graphics.Point windowSize = new android.graphics.Point();
+            windowSize.set(1280, 720);
+
+            Log.d("Vision", "Get corners");
+            TrackerCorners corners = calcCorners(currentState, currentState.getTrackableResult(0), windowSize.x, windowSize.y, true);
+
+            Log.d("Vision", "Got corners -> image to pixelArray");
+
+            ByteBuffer pixels = image.getPixels();
+            byte[] pixelArray = new byte[pixels.remaining()];
+            pixels.get(pixelArray, 0, pixelArray.length);
+
+
+            Log.d("Vision", "Start first detection");
+            BoardVisionResult visionResult = boardDetection.detectBoard(pixelArray, image.getWidth(), image.getHeight(), corners, true, 0, 0, true);
+
+            int scanCount = 0;
+            while (!visionResult.isScanSuccessful() && scanCount < 10) {
+                Log.d("Vision", "Start first detection: " + scanCount);
+                visionResult = boardDetection.detectBoard(pixelArray, image.getWidth(), image.getHeight(), corners, true, 0, 0, true);
+                scanCount++;
+            }
+
+            if (!visionResult.isScanSuccessful()) {
+                Log.d("Vision", "Could not find board -> abort");
+                return;
+            }
+
+            Log.d("Vision", "Got result from vision -> analyze");
+
+            SimpleField[][] fields = game.getBoard().getFields();
+
+            for (int y = 0; y < fields.length; y++) {
+                SimpleField[] row = fields[y];
+                for (int x = 0; x < row.length; x++) {
+                    char visionLetter = visionResult.getLettersOnBoard()[y][x];
+                    if(visionLetter == 0) {
+                        continue;
+                    }
+                    Letter onBoardletter = fields[y][x].getLetter();
+
+                    if (onBoardletter == null || onBoardletter.getValue() != visionLetter) {
+                        currentTurn.placeStone(x, y, Letter.getLetterFor(visionLetter));
+                        Log.d("Vision", "Add '" + visionLetter + "' to X(" + x + ") Y(" + y + ")");
+                    }
+                }
+            }
+
+            game.executeTurn(currentTurn);
+
+            updateActivePlayer();
+
+            if (!hasMissingStones(game.getActivePlayer())) {
+                currentTurn = game.newTurn(null);
             }
         }
+    }
 
-        currentTurn.placeStone(1,1,Letter.A);
 
-        game.executeTurn(currentTurn);
-
-        updateActivePlayer();
-
-        if(!hasMissingStones(game.getActivePlayer())){
-            currentTurn = game.newTurn(null);
-        }
+    public void roundFinished() {
+        finishRound = true;
     }
 
     public void startGame(HashMap<String, String> players, String[] wordList) {
@@ -134,7 +184,7 @@ public class JMonkeyApplication extends SimpleApplication implements BoardDetect
     public void setNewStones(String newStones) {
         char[] stoneParts = newStones.toCharArray();
         Letter[] letters = new Letter[stoneParts.length];
-        for (int i=0; i<stoneParts.length; i++) {
+        for (int i = 0; i < stoneParts.length; i++) {
             letters[i] = Letter.valueOf(stoneParts[i] + "");
         }
         currentTurn = game.newTurn(letters);
@@ -172,6 +222,8 @@ public class JMonkeyApplication extends SimpleApplication implements BoardDetect
         initForegroundScene();
 
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB888, true);
+
+        boardDetection = new BoardDetection(this);
     }
 
     private void initTrackers() {
@@ -247,6 +299,11 @@ public class JMonkeyApplication extends SimpleApplication implements BoardDetect
         // First get the current state from Vuforia
         // -> We get tracking informations and the current image/frame
         State currentState = Renderer.getInstance().begin();
+
+        if(finishRound){
+            Log.d("Vision", "Finish round now");
+            finishRound(currentState);
+        }
 
         updateBackgroundVideoImage(currentState, tpf);
         updateJMonkeyCameraByVuforiaState(currentState);
