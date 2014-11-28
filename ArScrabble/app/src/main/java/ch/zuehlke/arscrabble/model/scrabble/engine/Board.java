@@ -63,25 +63,17 @@ public class Board {
         }
     }
 
-    public void paint() {
-        for(SimpleField[] row : board) {
-            for(SimpleField field : row) {
-                field.paint();
+    public String toString() {
+        String stringBoard = "";
+        for (SimpleField[] row : board) {
+            for (SimpleField field : row) {
+                stringBoard += field.toString();
             }
-            System.out.println();
-            System.out.println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+            stringBoard += System.getProperty("line.separator") + "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" + System.getProperty("line.separator");
         }
-
+        return stringBoard;
     }
 
-    public boolean isStoneWithLetter(Letter letter, int x, int y) {
-        validateCoordinates(x, y);
-        Stone stone = board[y][x].getStone();
-        if(stone != null && letter.equals(stone.getLetter())) {
-            return true;
-        }
-        return false;
-    }
 
     public boolean isEmpty() {
         for (int i = 0; i < board.length; i++) {
