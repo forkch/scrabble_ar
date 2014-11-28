@@ -30,10 +30,11 @@ public enum Letter {
 
     public static Letter getLetterFor(char charcater) {
         for(Letter letter : values()) {
-            if(letter.equals(charcater)) {
+            if(letter.getValue() == charcater) {
                 return letter;
             }
         }
         throw new RuntimeException("Ever saw a scrabble with a letter '' + stringLetter + ''...jerk!");
     }
+
 }

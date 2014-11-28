@@ -116,28 +116,48 @@ public class JMonkeyActivity extends AndroidHarness implements ScrabbleUI {
     }
 
     @Override
-    public void UpdatePlayer(String name) {
-        playerNameTextView.setText(name);
+    public void UpdatePlayer(final String name) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                playerNameTextView.setText(name);
+
+            }
+        });
     }
 
     @Override
-    public void UpdatePlayerStones(String stones) {
-        playerStonesTextView.setText(stones);
+    public void UpdatePlayerStones(final String stones) {
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                playerStonesTextView.setText(stones);
+
+            }
+        });
     }
 
     @Override
-    public void setPlayerNeedStones(boolean value) {
+    public void setPlayerNeedStones(final boolean value) {
 
-        if (value) {
-            playerNeedStonesEditText.setVisibility(View.VISIBLE);
-            playerNeedStonesInfo.setVisibility(View.VISIBLE);
-            playerNeedStonesSaveButton.setVisibility(View.VISIBLE);
-        } else {
-            playerNeedStonesEditText.setVisibility(View.GONE);
-            playerNeedStonesInfo.setVisibility(View.GONE);
-            playerNeedStonesSaveButton.setVisibility(View.GONE);
-        }
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (value) {
+                    playerNeedStonesEditText.setVisibility(View.VISIBLE);
+                    playerNeedStonesInfo.setVisibility(View.VISIBLE);
+                    playerNeedStonesSaveButton.setVisibility(View.VISIBLE);
+                } else {
+                    playerNeedStonesEditText.setVisibility(View.GONE);
+                    playerNeedStonesInfo.setVisibility(View.GONE);
+                    playerNeedStonesSaveButton.setVisibility(View.GONE);
+                }
 
-        finishRoundButton.setEnabled(!value);
+                finishRoundButton.setEnabled(!value);
+
+
+            }
+        });
     }
 }

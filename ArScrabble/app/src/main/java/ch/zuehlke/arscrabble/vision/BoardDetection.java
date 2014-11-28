@@ -168,16 +168,19 @@ public class BoardDetection {
 
 
     private void initializeTesseract() {
+        Log.d("Vision", " - Start init tesseract");
         tessBaseAPI = new TessBaseAPI();
         tessBaseAPI.setDebug(false);
         String path = Environment.getExternalStorageDirectory().getPath() + "/tesseract/";
         final boolean exists = new File(path + "tessdata").exists();
         if(!exists){
-            Log.d("Vision", "Could not find tesseract data");
+            Log.e("Vision", " - Could not find tesseract data");
         }
         tessBaseAPI.init(path, "eng", TessBaseAPI.OEM_TESSERACT_ONLY);
         tessBaseAPI.setPageSegMode(TessBaseAPI.PageSegMode.PSM_SINGLE_CHAR);
         tessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "ABCDEFGHIJKLMNOPQRSTUVWXYZi");
+
+        Log.d("Vision", " - Tesseract ready to go");
     }
 
     public void destroy() {
