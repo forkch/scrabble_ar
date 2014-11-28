@@ -172,6 +172,9 @@ public class BoardDetection {
         tessBaseAPI.setDebug(false);
         String path = Environment.getExternalStorageDirectory().getPath() + "/tesseract/";
         final boolean exists = new File(path + "tessdata").exists();
+        if(!exists){
+            Log.d("Vision", "Could not find tesseract data");
+        }
         tessBaseAPI.init(path, "eng", TessBaseAPI.OEM_TESSERACT_ONLY);
         tessBaseAPI.setPageSegMode(TessBaseAPI.PageSegMode.PSM_SINGLE_CHAR);
         tessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "ABCDEFGHIJKLMNOPQRSTUVWXYZi");

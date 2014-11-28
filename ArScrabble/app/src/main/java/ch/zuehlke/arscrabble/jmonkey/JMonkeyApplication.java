@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import ch.zuehlke.arscrabble.TrackerCorners;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Letter;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Player;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Rack;
@@ -56,8 +57,11 @@ import ch.zuehlke.arscrabble.model.scrabble.engine.fields.SimpleField;
 import ch.zuehlke.arscrabble.model.scrabble.solver.ScrabbleSolver;
 import ch.zuehlke.arscrabble.model.scrabble.solver.VirtualStone;
 import ch.zuehlke.arscrabble.vision.BoardDetection;
+import ch.zuehlke.arscrabble.vision.BoardVisionResult;
 import ch.zuehlke.arscrabble.vision.ScrabbleBoardMetrics;
 import ch.zuehlke.arscrabble.vuforiautils.SampleMath;
+
+import static ch.zuehlke.arscrabble.VectorUtils.calcCorners;
 
 /**
  * Created by ssh on 25.11.2014.
@@ -83,28 +87,67 @@ public class JMonkeyApplication extends SimpleApplication implements BoardDetect
     public void roundFinished() {
 
         //currentTurn.placeStone()
+        State currentState = Renderer.getInstance().begin();
+        com.qualcomm.vuforia.Image image = getRGB888Image(currentState.getFrame());
 
-        SimpleField[][] fields = game.getBoard().getFields();
+        if (image != null && isBoardTracked) {
 
-        for(int x =0; x<fields.length; x++){
-            SimpleField[] row = fields[x];
-            for(int y=0; y<row.length; y++) {
-                SimpleField field = row[y];
+            Log.d("Vision", "Start ");
+            android.graphics.Point windowSize = new android.graphics.Point();
+            windowSize.set(1280, 720);
 
-                //if(...){
-                    //currentTurn.placeStone(x,y, ...);
-                //}
+            Log.d("Vision", "Get corners");
+            TrackerCorners corners = calcCorners(currentState, currentState.getTrackableResult(0), windowSize.x, windowSize.y, true);
+
+            Log.d("Vision", "Got corners -> image to pixelArray");
+
+            ByteBuffer pixels = image.getPixels();
+            byte[] pixelArray = new byte[pixels.remaining()];
+            pixels.get(pixelArray, 0, pixelArray.length);
+
+            Log.d("Vision", "Copy done -> create BoardDetection");
+            BoardDetection d = new BoardDetection(this);
+
+            Log.d("Vision", "Start first detection");
+            BoardVisionResult visionResult = d.detectBoard(pixelArray, image.getWidth(), image.getHeight(), corners, true, 0, 0, true);
+
+            int scanCount  = 0;
+            while(!visionResult.isScanSuccessful() && scanCount < 10){
+                Log.d("Vision", "Start first detection: " + scanCount);
+                visionResult = d.detectBoard(pixelArray, image.getWidth(), image.getHeight(), corners, true, 0, 0, true);
+                scanCount++;
             }
-        }
 
-        currentTurn.placeStone(1,1,Letter.A);
+            if(!visionResult.isScanSuccessful()){
+                Log.d("Vision", "Could not find board -> abort");
+                return;
+            }
 
-        game.executeTurn(currentTurn);
+            Log.d("Vision", "Got result from vision -> analyze");
 
-        updateActivePlayer();
+            SimpleField[][] fields = game.getBoard().getFields();
 
-        if(!hasMissingStones(game.getActivePlayer())){
-            currentTurn = game.newTurn(null);
+            for (int x = 0; x < fields.length; x++) {
+                SimpleField[] row = fields[x];
+                for (int y = 0; y < row.length; y++) {
+                    char visionLetter = visionResult.getLettersOnBoard()[x][y];
+                    Letter onBoardletter = fields[x][y].getLetter();
+
+                    if (onBoardletter != null && onBoardletter.getValue() != visionLetter) {
+                        currentTurn.placeStone(x, y, Letter.getLetterFor(visionLetter));
+                    }
+                }
+            }
+
+            currentTurn.placeStone(1, 1, Letter.A);
+
+            game.executeTurn(currentTurn);
+
+            updateActivePlayer();
+
+            if (!hasMissingStones(game.getActivePlayer())) {
+                currentTurn = game.newTurn(null);
+            }
         }
     }
 
