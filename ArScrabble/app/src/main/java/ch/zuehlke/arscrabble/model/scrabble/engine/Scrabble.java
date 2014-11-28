@@ -30,7 +30,10 @@ public class Scrabble {
         activePlayerIndex = 0;
     }
 
-    public Turn newTurn() {
+    public Turn newTurn(List<Stone> stones) {
+        if(stones != null){
+            getActivePlayer().getRack().addStones(stones);
+        }
         return new Turn(board, players.get(activePlayerIndex));
     }
 

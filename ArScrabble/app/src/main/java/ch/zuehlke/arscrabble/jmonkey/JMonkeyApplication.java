@@ -51,15 +51,18 @@ import ch.zuehlke.arscrabble.model.scrabble.engine.Rack;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Scrabble;
 import ch.zuehlke.arscrabble.model.scrabble.engine.Stone;
 import ch.zuehlke.arscrabble.model.scrabble.engine.StoneBag;
+import ch.zuehlke.arscrabble.model.scrabble.engine.Turn;
+import ch.zuehlke.arscrabble.model.scrabble.engine.fields.SimpleField;
 import ch.zuehlke.arscrabble.model.scrabble.solver.ScrabbleSolver;
 import ch.zuehlke.arscrabble.model.scrabble.solver.VirtualStone;
+import ch.zuehlke.arscrabble.vision.BoardDetection;
 import ch.zuehlke.arscrabble.vision.ScrabbleBoardMetrics;
 import ch.zuehlke.arscrabble.vuforiautils.SampleMath;
 
 /**
  * Created by ssh on 25.11.2014.
  */
-public class JMonkeyApplication extends SimpleApplication {
+public class JMonkeyApplication extends SimpleApplication implements BoardDetection.BoardDetectionDebugCallback {
     private Material backgroundCameraMaterial;
     private Texture2D backgroundCameraTexture;
     private Spatial backgroundCameraGeometry;
@@ -70,6 +73,7 @@ public class JMonkeyApplication extends SimpleApplication {
     private HashMap<VirtualStone, Spatial> virtualStones = new HashMap<VirtualStone, Spatial>();
     private ScrabbleBoardMetrics metrics;
     private ScrabbleSolver scrabbleSolver;
+    private Turn currentTurn;
 
     private boolean isBoardTracked;
     private boolean isBoardVisible;
@@ -78,6 +82,30 @@ public class JMonkeyApplication extends SimpleApplication {
 
     public void roundFinished() {
 
+        //currentTurn.placeStone()
+
+        SimpleField[][] fields = game.getBoard().getFields();
+
+        for(int x =0; x<fields.length; x++){
+            SimpleField[] row = fields[x];
+            for(int y=0; y<row.length; y++) {
+                SimpleField field = row[y];
+
+                //if(...){
+                    //currentTurn.placeStone(x,y, ...);
+                //}
+            }
+        }
+
+        currentTurn.placeStone(1,1,Letter.A);
+
+        game.executeTurn(currentTurn);
+
+        updateActivePlayer();
+
+        if(!hasMissingStones(game.getActivePlayer())){
+            currentTurn = game.newTurn(null);
+        }
     }
 
     public void startGame(HashMap<String, String> players) {
@@ -93,6 +121,14 @@ public class JMonkeyApplication extends SimpleApplication {
         scrabbleSolver = new ScrabbleSolver(game);
 
         updateActivePlayer();
+
+        currentTurn = game.newTurn(null);
+    }
+
+    public void setNewStones(String newStones) {
+        List<Stone> stones = getStones(newStones, game.getStoneBag());
+        currentTurn = game.newTurn(stones);
+        updateActivePlayer();
     }
 
     private void updateActivePlayer() {
@@ -104,6 +140,12 @@ public class JMonkeyApplication extends SimpleApplication {
             remainingStones += stone.getLetter().getValue();
         }
         ui.UpdatePlayerStones(remainingStones);
+
+        ui.setPlayerNeedStones(hasMissingStones(activePlayer));
+    }
+
+    private boolean hasMissingStones(Player activePlayer) {
+        return activePlayer.getRack().getNumberOfMissingStones() > 0;
     }
 
     @Override
@@ -127,7 +169,7 @@ public class JMonkeyApplication extends SimpleApplication {
         List<Stone> stones = new ArrayList<Stone>();
         char[] stoneParts = stoneDefinition.toCharArray();
         for (char stone : stoneParts) {
-            stones.add(stoneBag.pop(Letter.valueOf(stone + "".toUpperCase())));
+            stones.add(stoneBag.pop(Letter.valueOf((stone + "").toUpperCase())));
         }
 
         return stones;
@@ -140,7 +182,10 @@ public class JMonkeyApplication extends SimpleApplication {
     }
 
     private void initDeviceCamera() {
-        CameraDevice cameraDevice = initCameraDevice();
+        CameraDevice cameraDevice = CameraDevice.getInstance();
+        cameraDevice.init(CameraDevice.CAMERA.CAMERA_DEFAULT);
+        CameraDevice.getInstance().start();
+
         VideoMode videoMode = cameraDevice.getVideoMode(CameraDevice.MODE.MODE_OPTIMIZE_SPEED);
         VideoBackgroundConfig config = initVideoBackgroundConfig(videoMode);
         Renderer.getInstance().setVideoBackgroundConfig(config);
@@ -196,13 +241,6 @@ public class JMonkeyApplication extends SimpleApplication {
         sun1.setColor(color);
         sun1.setDirection(new Vector3f(x, y, z).normalizeLocal());
         rootNode.addLight(sun1);
-    }
-
-    private CameraDevice initCameraDevice() {
-        CameraDevice cameraDevice = CameraDevice.getInstance();
-        cameraDevice.init(CameraDevice.CAMERA.CAMERA_DEFAULT);
-        CameraDevice.getInstance().start();
-        return cameraDevice;
     }
 
     @Override
@@ -519,5 +557,35 @@ public class JMonkeyApplication extends SimpleApplication {
 
     public void setUI(ScrabbleUI ui) {
         this.ui = ui;
+    }
+
+    @Override
+    public void putMatOnLiveImageView(Mat imageMat) {
+
+    }
+
+    @Override
+    public void putMatOnSegment1ImageView(Mat imageMat) {
+
+    }
+
+    @Override
+    public void putMatOnSegment2ImageView(Mat imageMat) {
+
+    }
+
+    @Override
+    public void putMatOnProcessedImageView(Mat imageMat) {
+
+    }
+
+    @Override
+    public void setDivTextView(String s) {
+
+    }
+
+    @Override
+    public void setOCRTextView(String s) {
+
     }
 }
