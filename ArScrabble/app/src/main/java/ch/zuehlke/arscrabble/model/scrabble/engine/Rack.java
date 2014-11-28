@@ -49,6 +49,14 @@ public class Rack {
         return stones;
     }
 
+    public String getStonesAsString() {
+        String stringRack = "";
+        for(Stone stone : stones) {
+            stringRack += stone.getLetter();
+        }
+        return stringRack;
+    }
+
     public String toString() {
         String stringRack = "";
        for(Stone stone : stones) {
