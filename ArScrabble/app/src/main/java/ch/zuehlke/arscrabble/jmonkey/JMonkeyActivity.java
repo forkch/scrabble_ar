@@ -51,19 +51,6 @@ public class JMonkeyActivity extends AndroidHarness implements ScrabbleUI {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread paramThread, Throwable paramThrowable) {
-                AlertDialog.Builder alert = new AlertDialog.Builder(JMonkeyActivity.this);
-                alert.setTitle("Something went wrong...");
-                alert.setMessage(paramThrowable.getMessage());
-
-                alert.setPositiveButton("Ok", null);
-
-                alert.show();
-            }
-        });
-
         Vuforia.setInitParameters(this, Vuforia.GL_20);
         Vuforia.init();
 
@@ -110,6 +97,7 @@ public class JMonkeyActivity extends AndroidHarness implements ScrabbleUI {
 
         getJMonkeyApplication().startGame(players, getWordList());
     }
+
 
     private void addPlayerInfosFromIntent(HashMap<String, String> players, Intent intent, String nameExtra, String stoneExtra) {
         String playerName = intent.getStringExtra(nameExtra);

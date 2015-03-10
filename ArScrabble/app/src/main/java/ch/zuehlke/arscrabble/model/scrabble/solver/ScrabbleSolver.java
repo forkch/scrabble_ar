@@ -28,10 +28,13 @@ public class ScrabbleSolver {
         index = new ArrayList<IndexedWord>();
         for(String word : wordList) {
 
-            word = word.toLowerCase();
-            String sorted = sortWord(word);
-            IndexedWord indexedWord = new IndexedWord(word, sorted, 3);
-            index.add(indexedWord);
+            if(word != null && !word.isEmpty()){
+                word = word.toLowerCase();
+                String sorted = sortWord(word);
+                IndexedWord indexedWord = new IndexedWord(word, sorted, 3);
+                index.add(indexedWord);
+            }
+
 //            System.out.println(indexedWord.getWord() + "-->" + indexedWord.getSortedWord());
         }
     }
@@ -68,20 +71,28 @@ public class ScrabbleSolver {
 
     public List<VirtualStone> getWord(Player player) {
 
-        Rack rack = player.getRack();
-        String regex = createRegex(rack.getStonesAsString());
+//        Rack rack = player.getRack();
+//        String regex = createRegex(rack.getStonesAsString());
+//        List<VirtualStone> virtualStones = new ArrayList<VirtualStone>();
+//
+//        for(IndexedWord indexedWord : index) {
+//            if(indexedWord.getSortedWord().matches(regex)) {
+//                int i = 2;
+//                for(char character : indexedWord.getWord().toCharArray()) {
+//                    virtualStones.add(new VirtualStone(rack.pop(Letter.getLetterFor(character)), i, 3));
+//                }
+//                return virtualStones;
+//            }
+//        }
+//
+//        return virtualStones;
+
         List<VirtualStone> virtualStones = new ArrayList<VirtualStone>();
-
-        for(IndexedWord indexedWord : index) {
-            if(indexedWord.getSortedWord().matches(regex)) {
-                int i = 2;
-                for(char character : indexedWord.getWord().toCharArray()) {
-                    virtualStones.add(new VirtualStone(rack.pop(Letter.getLetterFor(character)), i, 3));
-                }
-                return virtualStones;
-            }
+        List<Stone> stones = player.getRack().getStones();
+        for (int i=0; i< stones.size(); i++) {
+            Stone stone = stones.get(i);
+            virtualStones.add(new VirtualStone(stone, 1, i));
         }
-
         return virtualStones;
     }
 
