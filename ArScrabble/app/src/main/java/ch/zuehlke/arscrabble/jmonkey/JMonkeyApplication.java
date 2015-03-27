@@ -583,7 +583,7 @@ public class JMonkeyApplication extends SimpleApplication implements BoardDetect
             return false;
         }
 
-        if (!mCurrentDataset.load("board.xml", STORAGE_TYPE.STORAGE_APPRESOURCE)) {
+        if (!mCurrentDataset.load("ImageTargets/board.xml", STORAGE_TYPE.STORAGE_APPRESOURCE)) {
             return false;
         }
 

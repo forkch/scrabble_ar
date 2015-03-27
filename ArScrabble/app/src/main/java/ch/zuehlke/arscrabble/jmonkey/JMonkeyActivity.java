@@ -159,20 +159,10 @@ public class JMonkeyActivity extends AndroidHarness implements ScrabbleUI {
     }
 
     private List<String> getWordList() {
-        try {
-            InputStream is = getAssets().open(DICTIONARY_FILE_NAME);
+        List<String> list = new ArrayList<>();
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-            List<String> words = new ArrayList<String>();
-            String mLine = reader.readLine();
-            while (mLine != null) {
-                mLine = reader.readLine();
-                words.add(mLine);
-            }
+        list.add("ZUEHLKE");
 
-            return words;
-        } catch (IOException e) {
-            throw new RuntimeException("Could not read dictionary file '" + DICTIONARY_FILE_NAME + "'");
-        }
+        return list;
     }
 }
